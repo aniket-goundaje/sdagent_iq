@@ -1,0 +1,11 @@
+{
+  "name": "@sd-agent-iq/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve web",
+    "build": "ng build web",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "lint": "tsc --noEmit -p tsconfig.app.json"
+  }
+}

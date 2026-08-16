@@ -1,0 +1,42 @@
+<div class="login-shell">
+  <section class="brand-panel">
+    <div class="brand-lockup">
+      <span class="brand-name">CGI</span>
+      <span class="brand-divider"></span>
+      <span class="brand-subtitle">SD Agent IQ</span>
+    </div>
+
+    <h1>Service desk answers, notes, and reference screens in one place.</h1>
+    <p>
+      This first slice wires the Angular shell to the Express API so we can layer in
+      parsing, retrieval, and document-grounded answers next.
+    </p>
+
+    <div class="demo-actions">
+      <button mat-stroked-button type="button" (click)="useAgentDemo()">Use agent demo</button>
+      <button mat-stroked-button type="button" (click)="useSupervisorDemo()">Use supervisor demo</button>
+    </div>
+  </section>
+
+  <mat-card class="login-card">
+    <form [formGroup]="loginForm" (ngSubmit)="submit()">
+      <h2>Sign in</h2>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" />
+      </mat-form-field>
+
+      <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? "Signing in..." : "Continue" }}
+      </button>
+    </form>
+  </mat-card>
+</div>

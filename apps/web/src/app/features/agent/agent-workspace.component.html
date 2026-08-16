@@ -1,0 +1,52 @@
+<div class="workspace">
+  <aside class="rail">
+    <h3>Recent questions</h3>
+    <mat-list>
+      <mat-list-item *ngFor="let item of recent()">
+        <button mat-button type="button" (click)="ask(item.question)">{{ item.question }}</button>
+      </mat-list-item>
+    </mat-list>
+  </aside>
+
+  <main class="chat-panel">
+    <mat-card class="composer">
+      <h2>SD Agent IQ</h2>
+      <p>Search the latest scripts and show structured answers for the service desk workflow.</p>
+      <div class="composer-row">
+        <input matInput [ngModel]="question()" (ngModelChange)="question.set($event)" placeholder="Ask a service desk question" />
+        <button mat-flat-button color="primary" type="button" (click)="ask(question())">Ask</button>
+      </div>
+      <p class="thinking" *ngIf="isThinking()">Thinking...</p>
+    </mat-card>
+
+    <mat-card class="answer-card" *ngIf="response() as result">
+      <mat-tab-group>
+        <mat-tab label="Say this to caller">
+          <div class="answer-copy">{{ result.sayThisToCaller }}</div>
+        </mat-tab>
+        <mat-tab label="Notes">
+          <ul>
+            <li *ngFor="let note of result.notes">{{ note }}</li>
+          </ul>
+        </mat-tab>
+        <mat-tab label="Steps">
+          <ul>
+            <li *ngFor="let step of result.steps">{{ step }}</li>
+          </ul>
+        </mat-tab>
+        <mat-tab label="Reference Screenshots">
+          <p class="empty-state" *ngIf="result.referenceScreenshots.length === 0">Screenshots will appear here once PM parsing is wired.</p>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card>
+  </main>
+
+  <aside class="rail">
+    <h3>Usually asked</h3>
+    <mat-list>
+      <mat-list-item *ngFor="let item of common()">
+        <button mat-button type="button" (click)="ask(item)">{{ item }}</button>
+      </mat-list-item>
+    </mat-list>
+  </aside>
+</div>

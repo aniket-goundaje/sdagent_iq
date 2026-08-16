@@ -1,0 +1,12 @@
+<div class="supervisor-shell">
+  <mat-card>
+    <h1>Supervisor workspace</h1>
+    <p>Upload, indexing, and version controls will land here in the next slice.</p>
+
+    <section *ngIf="status() as documentStatus">
+      <h2>Document state</h2>
+      <p>Ingestion state: {{ documentStatus.ingestionState }}</p>
+      <p *ngIf="!documentStatus.activeVersion">No active document version yet.</p>
+    </section>
+  </mat-card>
+</div>

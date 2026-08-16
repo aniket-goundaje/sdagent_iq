@@ -1,0 +1,13 @@
+node_modules
+dist
+.angular
+.DS_Store
+.env
+coverage
+tmp
+logs
+*.log
+documents/archive/*
+!documents/archive/.gitkeep
+documents/incoming/*
+!documents/incoming/.gitkeep

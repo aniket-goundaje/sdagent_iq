@@ -1,0 +1,27 @@
+:root {
+  --cgi-red: #e11937;
+  --cgi-purple: #7a39ad;
+  --cgi-green: #55c785;
+  --cgi-ink: #152238;
+  --cgi-mist: #eef3f6;
+  --cgi-white: #ffffff;
+  --cgi-border: rgba(21, 34, 56, 0.1);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--cgi-ink);
+  background:
+    radial-gradient(circle at top left, rgba(85, 199, 133, 0.2), transparent 30%),
+    linear-gradient(145deg, #f7fbf8 0%, #f5f2fb 45%, #ffffff 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
