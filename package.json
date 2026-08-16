@@ -8,9 +8,11 @@
   ],
   "scripts": {
     "dev:web": "ng serve web",
-    "dev:api": "npm run dev -w @sd-agent-iq/api",
+    "dev:api": "npm run start -w @sd-agent-iq/api",
     "build:web": "ng build web",
     "build:api": "npm run build -w @sd-agent-iq/api",
+    "ingest:scripts": "npm run build:api && npm run ingest:scripts -w @sd-agent-iq/api",
+    "ingest:pm": "npm run build:api && npm run ingest:pm -w @sd-agent-iq/api",
     "typecheck": "npm run typecheck -w @sd-agent-iq/api && npm run typecheck -w @sd-agent-iq/web",
     "lint": "npm run lint -w @sd-agent-iq/api && npm run lint -w @sd-agent-iq/web"
   },
@@ -32,6 +34,7 @@
     "@types/express": "^5.0.3",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2"
   },
@@ -40,6 +43,7 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "morgan": "^1.10.1",
+    "pg": "^8.16.3",
     "rxjs": "^7.8.2",
     "tslib": "^2.8.1",
     "zone.js": "^0.15.1"

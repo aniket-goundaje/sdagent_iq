@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "node dist/apps/api/src/index.js",
+    "start": "node dist/apps/api/src/index.js",
     "build": "tsc -p tsconfig.json",
+    "ingest:scripts": "node dist/apps/api/src/scripts/ingest-latest-scripts.js",
+    "ingest:pm": "node dist/apps/api/src/scripts/ingest-latest-pm.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json"
   }

@@ -1,6 +1,8 @@
 import type { Express } from "express";
 
-import type { ChatQueryRequest, ChatQueryResponse, RecentQuestion } from "@sd-agent-iq/shared";
+import type { ChatQueryRequest, RecentQuestion } from "@sd-agent-iq/shared";
+
+import { buildChatResponse } from "./chat.service.js";
 
 const recentQuestions: RecentQuestion[] = [
   {
@@ -31,36 +33,13 @@ export function registerChatRoutes(app: Express) {
     });
   });
 
-  app.post("/api/chat/query", (req, res) => {
+  app.post("/api/chat/query", async (req, res, next) => {
     const body = req.body as Partial<ChatQueryRequest>;
-    const question = (body.question ?? "").trim();
-
-    const response: ChatQueryResponse = {
-      question,
-      selectedScenarioId: body.selectedScenarioId ?? null,
-      sayThisToCaller: question
-        ? "This is a placeholder grounded response. The Scripts PDF parser and retrieval layer will replace this text in the next slice."
-        : "Please enter a question so the service can search the latest scripts.",
-      notes: [
-        "Notes will come from the Scripts PDF note column.",
-        "This response is a shell endpoint for wiring the UI."
-      ],
-      steps: [
-        "Parse Scripts PDF rows.",
-        "Index script and note fields.",
-        "Return grounded content from retrieval."
-      ],
-      referenceScreenshots: [],
-      citations: [
-        {
-          label: "Scripts PDF",
-          sourceType: "scripts_pdf",
-          page: 1
-        }
-      ],
-      cacheHit: false
-    };
-
-    res.json(response);
+    try {
+      const response = await buildChatResponse(body.question ?? "", body.selectedScenarioId ?? null);
+      res.json(response);
+    } catch (error) {
+      next(error);
+    }
   });
 }

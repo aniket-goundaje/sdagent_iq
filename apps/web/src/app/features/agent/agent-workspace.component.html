@@ -9,35 +9,102 @@
   </aside>
 
   <main class="chat-panel">
-    <mat-card class="composer">
-      <h2>SD Agent IQ</h2>
-      <p>Search the latest scripts and show structured answers for the service desk workflow.</p>
-      <div class="composer-row">
-        <input matInput [ngModel]="question()" (ngModelChange)="question.set($event)" placeholder="Ask a service desk question" />
-        <button mat-flat-button color="primary" type="button" (click)="ask(question())">Ask</button>
+    <header class="chat-header">
+      <div>
+        <h2>SD Agent IQ</h2>
+        <p>Grounded caller scripts, notes, steps, and reference links in a single chat flow.</p>
       </div>
-      <p class="thinking" *ngIf="isThinking()">Thinking...</p>
-    </mat-card>
+    </header>
 
-    <mat-card class="answer-card" *ngIf="response() as result">
-      <mat-tab-group>
-        <mat-tab label="Say this to caller">
-          <div class="answer-copy">{{ result.sayThisToCaller }}</div>
-        </mat-tab>
-        <mat-tab label="Notes">
-          <ul>
-            <li *ngFor="let note of result.notes">{{ note }}</li>
-          </ul>
-        </mat-tab>
-        <mat-tab label="Steps">
-          <ul>
-            <li *ngFor="let step of result.steps">{{ step }}</li>
-          </ul>
-        </mat-tab>
-        <mat-tab label="Reference Screenshots">
-          <p class="empty-state" *ngIf="result.referenceScreenshots.length === 0">Screenshots will appear here once PM parsing is wired.</p>
-        </mat-tab>
-      </mat-tab-group>
+    <section class="chat-thread">
+      <div class="empty-thread" *ngIf="messages().length === 0">
+        <h3>Ask the next caller question here</h3>
+        <p>Short topics like <strong>sick leave</strong> will surface matching script questions. Full questions try to return the exact caller wording.</p>
+      </div>
+
+      <article class="message message-user" *ngFor="let message of messages()">
+        <div class="message-label" *ngIf="message.role === 'user'">You</div>
+        <div class="message-label" *ngIf="message.role === 'assistant'">SD Agent IQ</div>
+
+        <div class="message-bubble user-bubble" *ngIf="message.role === 'user'">
+          {{ message.question }}
+        </div>
+
+        <div class="message-bubble assistant-bubble" *ngIf="message.role === 'assistant' && message.pending">
+          <div class="thinking-state">
+            <span class="thinking-dot"></span>
+            <span class="thinking-dot"></span>
+            <span class="thinking-dot"></span>
+            <span>Thinking...</span>
+          </div>
+        </div>
+
+        <div class="message-bubble assistant-bubble" *ngIf="message.role === 'assistant' && message.response as result">
+          <section class="answer-section" *ngIf="result.scenarioMatches.length > 0">
+            <h3>Matching script questions</h3>
+            <p class="section-copy">Choose the closest script question to load the exact caller wording.</p>
+            <div class="scenario-chip-list">
+              <button class="scenario-chip" type="button" *ngFor="let match of result.scenarioMatches" (click)="chooseScenario(match)">
+                {{ match.scenarioText }}
+              </button>
+            </div>
+          </section>
+
+          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0">
+            <h3>Say this to caller</h3>
+            <div class="answer-copy">{{ result.sayThisToCaller }}</div>
+          </section>
+
+          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
+            <h3>Notes</h3>
+            <ul>
+              <li *ngFor="let note of result.notes">{{ note }}</li>
+            </ul>
+          </section>
+
+          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
+            <h3>Steps</h3>
+            <ul>
+              <li *ngFor="let step of result.steps">{{ step }}</li>
+            </ul>
+          </section>
+
+          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0">
+            <h3>Reference</h3>
+            <div class="reference-list" *ngIf="result.referenceScreenshots.length > 0; else noReferences">
+              <a
+                class="reference-link"
+                *ngFor="let reference of result.referenceScreenshots"
+                [href]="reference.imageUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>{{ reference.title }}</span>
+                <span>Page {{ reference.page }}</span>
+              </a>
+            </div>
+            <ng-template #noReferences>
+              <p class="empty-state">No PM reference links for this answer yet.</p>
+            </ng-template>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <mat-card class="composer">
+      <div class="composer-row">
+        <textarea
+          matInput
+          class="composer-input"
+          [ngModel]="question()"
+          (ngModelChange)="question.set($event)"
+          rows="3"
+          placeholder="Ask a service desk question"
+        ></textarea>
+        <button mat-flat-button color="primary" type="button" (click)="ask(question())" [disabled]="isThinking()">
+          {{ isThinking() ? "Thinking..." : "Ask" }}
+        </button>
+      </div>
     </mat-card>
   </main>
 

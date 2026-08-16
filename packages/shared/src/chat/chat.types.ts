@@ -11,6 +11,14 @@ export interface ReferenceScreenshot {
   page: number;
 }
 
+export interface ParsedScriptScenarioMatch {
+  id: string;
+  scenarioText: string;
+  sectionTitle: string;
+  pageStart: number;
+  pageEnd: number;
+}
+
 export interface ChatQueryRequest {
   question: string;
   selectedScenarioId?: string | null;
@@ -25,6 +33,7 @@ export interface ChatQueryResponse {
   referenceScreenshots: ReferenceScreenshot[];
   citations: Citation[];
   cacheHit: boolean;
+  scenarioMatches: ParsedScriptScenarioMatch[];
 }
 
 export interface RecentQuestion {

@@ -17,7 +17,9 @@ SD Agent IQ is a monorepo for a CGI-branded service desk assistant that combines
 3. Start Postgres with `docker compose up -d`.
 4. Run the API with `npm run dev:api`.
 5. Run the Angular app with `npm run dev:web`.
+6. Ingest the latest Scripts PDF from `documents/incoming` with `npm run ingest:scripts`.
+7. Ingest the latest PM PDF from `documents/incoming` with `npm run ingest:pm`.
 
 ## Current Slice
 
-This first slice establishes the monorepo, app bootstraps, shared contracts, local document conventions, and placeholder APIs that the next phase will extend with auth, parsing, and RAG logic.
+This slice establishes the monorepo, app bootstraps, shared contracts, local document conventions, the Scripts and PM PDF ingestion paths, grounded keyword retrieval backed by Postgres, and clickable PM reference links.
