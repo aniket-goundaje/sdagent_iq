@@ -1,10 +1,9 @@
-import { randomUUID } from "node:crypto";
-
 import type { Citation, DocumentStatusResponse, DocumentVersion, ParsedScriptScenarioMatch, ReferenceScreenshot } from "@sd-agent-iq/shared";
 
 import { pool } from "./client.js";
 import { ensureSchema } from "./schema.js";
 import { env } from "../config/env.js";
+import type { RetrievalChunkInput } from "../chunking/index.js";
 import type { ParsedPmReference, ParsedScriptEntry } from "../parsing/types.js";
 
 export interface StoredScriptEntry {
@@ -26,6 +25,10 @@ interface StoredPmReference {
   pageNumber: number;
   textExcerpt: string;
   imageCount: number;
+}
+
+function formatVector(embedding: number[]) {
+  return `[${embedding.join(",")}]`;
 }
 
 function mapStoredScriptEntry(row: Record<string, string | number>): StoredScriptEntry {
@@ -169,6 +172,70 @@ export async function replacePmReferences(documentVersionId: string, references:
           reference.text,
           reference.imageCount,
           searchText
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function replaceRetrievalChunks(documentVersionId: string, chunks: RetrievalChunkInput[], embeddings: number[][], embeddingModel: string) {
+  await ensureSchema();
+
+  if (chunks.length !== embeddings.length) {
+    throw new Error(`Chunk count (${chunks.length}) does not match embedding count (${embeddings.length}).`);
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM retrieval_chunks WHERE document_version_id = $1", [documentVersionId]);
+
+    for (const [index, chunk] of chunks.entries()) {
+      await client.query(
+        `
+          INSERT INTO retrieval_chunks (
+            id,
+            document_version_id,
+            source_kind,
+            chunk_kind,
+            script_entry_id,
+            pm_reference_id,
+            section_code,
+            section_title,
+            page_start,
+            page_end,
+            chunk_index,
+            content,
+            content_hash,
+            embedding_model,
+            embedding
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        `,
+        [
+          chunk.id,
+          chunk.documentVersionId,
+          chunk.sourceKind,
+          chunk.chunkKind,
+          chunk.scriptEntryId,
+          chunk.pmReferenceId,
+          chunk.sectionCode,
+          chunk.sectionTitle,
+          chunk.pageStart,
+          chunk.pageEnd,
+          chunk.chunkIndex,
+          chunk.content,
+          chunk.contentHash,
+          embeddingModel,
+          formatVector(embeddings[index])
         ]
       );
     }
