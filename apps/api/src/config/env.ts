@@ -1,9 +1,26 @@
 import dotenv from "dotenv";
+import fs from "node:fs";
 import path from "node:path";
 
-dotenv.config();
+function findRepoRoot(startDir: string) {
+  let currentDir = path.resolve(startDir);
 
-const repoRoot = process.env.INIT_CWD ?? process.cwd();
+  while (true) {
+    if (fs.existsSync(path.join(currentDir, ".env"))) {
+      return currentDir;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      return path.resolve(process.env.INIT_CWD ?? process.cwd());
+    }
+
+    currentDir = parentDir;
+  }
+}
+
+const repoRoot = findRepoRoot(process.env.INIT_CWD ?? process.cwd());
+dotenv.config({ path: path.resolve(repoRoot, ".env") });
 
 function requireEnv(name: string, fallback?: string) {
   const value = process.env[name] ?? fallback;

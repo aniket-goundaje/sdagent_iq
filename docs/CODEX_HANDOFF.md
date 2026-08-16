@@ -16,9 +16,9 @@ This repository is currently an npm workspace monorepo:
 - Local document folders under `documents/incoming` and `documents/archive`.
 - Postgres service configured through Docker Compose using the `pgvector/pgvector:pg17` image.
 
-Current implementation is a structured keyword/trigram retrieval system backed by Postgres. It is not yet a semantic/vector RAG implementation.
+Current implementation is a structured keyword/trigram retrieval system backed by Postgres, with the first vector foundation slice added. Semantic/vector retrieval is not yet wired into chat behavior.
 
-Planned architecture, not yet implemented, is to add embeddings, pgvector-backed semantic retrieval, hybrid ranking, and optionally LLM-grounded answer synthesis while preserving the existing structured response behavior.
+Approved planned architecture is to add embeddings, pgvector-backed semantic retrieval, and hybrid ranking while preserving the existing structured response behavior. Chat LLM generation is explicitly out of scope for the first vector-retrieval slice.
 
 ## Current RAG Pipeline
 
@@ -44,24 +44,33 @@ The currently implemented flow is:
    - Existing rows for a document version are replaced during ingestion.
    - `/api/admin/documents/reindex` ingests both latest Scripts and latest PM PDFs.
 
-4. Keyword/trigram retrieval:
+4. Derived vector chunk indexing:
+   - `apps/api/src/chunking/index.ts` builds deterministic retrieval chunks from parsed source rows.
+   - Scripts use one derived chunk per `script_entries` row.
+   - PM uses one page-oriented chunk per `pm_references` row, splitting only when the page text is too large.
+   - `apps/api/src/embeddings/index.ts` implements a configurable OpenAI embeddings client using `OPENAI_EMBEDDING_MODEL`.
+   - `apps/api/src/vector-db/schema.ts` creates `retrieval_chunks` with `embedding vector(1536)` and HNSW cosine index.
+   - `apps/api/src/vector-db/script-repository.ts` stores/replaces retrieval chunks for only the document version being rebuilt.
+   - `retrieval_chunks` is derived index data only; `script_entries` and `pm_references` remain authoritative.
+
+5. Keyword/trigram retrieval:
    - `apps/api/src/vector-db/schema.ts` creates `pg_trgm` indexes for text search.
    - `searchScripts()` uses `ILIKE`, token matching, manual scoring, and latest indexed Scripts version filtering.
    - `searchPmReferences()` uses token matching against latest indexed PM references.
 
-5. Chat response construction:
+6. Chat response construction:
    - `apps/api/src/chat/chat.service.ts` builds the `ChatQueryResponse`.
    - Empty questions and no-match cases return deterministic fallback messages.
    - Short or ambiguous queries return `scenarioMatches` for user selection.
    - Selected scenario IDs bypass ambiguity and return the selected script entry.
    - `sayThisToCaller`, `notes`, `steps`, citations, and PM page references are assembled by code.
 
-6. Citations and PM page references:
+7. Citations and PM page references:
    - Script citations are generated from the matched script entry section/page.
    - PM references are returned as links to `/api/documents/latest/pm#page=N`.
    - The shared type name is `ReferenceScreenshot`, but the current implementation returns PDF page links, not generated screenshots.
 
-Explicit current limitation: pgvector/vector retrieval, embedding generation/storage, and LLM answer generation are not implemented yet. The code currently creates the Postgres `vector` extension but does not store vectors or call embedding/LLM APIs.
+Explicit current limitation: pgvector schema and embedding storage are implemented, but vector retrieval/hybrid ranking are not used by chat yet. Chat LLM generation is not implemented and must not be added in the first vector retrieval slice.
 
 ## Repository Map
 
@@ -73,9 +82,10 @@ Explicit current limitation: pgvector/vector retrieval, embedding generation/sto
 - `apps/api/src/parsing` - TypeScript parser wrappers and Python PDF parsers.
 - `apps/api/src/ingestion` - Scripts and PM ingestion services.
 - `apps/api/src/vector-db` - Postgres client, schema setup, script/PM repository and keyword retrieval.
-- `apps/api/src/embeddings` - Placeholder module only.
+- `apps/api/src/embeddings` - Configurable OpenAI embedding client.
 - `apps/api/src/llm` - Placeholder module only.
 - `apps/api/src/retrieval` - Placeholder module only.
+- `apps/api/src/chunking` - Deterministic retrieval chunk builders for Scripts and PM source rows.
 - `apps/web/src/app/features/auth` - Login page.
 - `apps/web/src/app/features/agent` - Agent chat workspace.
 - `apps/web/src/app/features/supervisor` - Supervisor document status placeholder.
@@ -95,6 +105,10 @@ Implemented:
 - PDF parsing via Python/pdfplumber.
 - Ingestion into Postgres structured tables.
 - Keyword/trigram retrieval for Scripts and PM references.
+- pgvector `retrieval_chunks` schema with HNSW cosine index.
+- Deterministic Script and PM chunk builders.
+- Embedding client for `text-embedding-3-small`/configured `OPENAI_EMBEDDING_MODEL`.
+- Ingestion integration that derives chunks, generates embeddings, and stores vectors for the rebuilt document version.
 - Deterministic chat response construction with ambiguity handling.
 - PM reference links to source PDF pages.
 - Supervisor page fetching document status.
@@ -103,8 +117,25 @@ Validation actually performed in this session:
 
 - `git status --short --branch` showed a clean branch before this handoff was created: `main...origin/main`.
 - `npm run typecheck` completed successfully before this handoff was created.
+- During the first vector foundation slice, `npm run typecheck` and `npm run build:api` completed successfully.
+- Local schema creation against Postgres completed successfully.
+- Local schema inspection confirmed the `retrieval_chunks` columns and indexes.
+- Local parse/chunk verification produced 718 Script chunks and 190 PM chunks from the incoming PDFs.
+- A synthetic local insert/rollback verified the `retrieval_chunks` vector column and constraints without leaving test rows.
 
 No automated unit/integration test suite was identified or run.
+
+Full private-PDF ingestion with real OpenAI embeddings was not completed because the validator rejected exporting private PDF content to the external OpenAI embeddings API, and a benign embedding smoke test failed because the environment used a placeholder API key.
+
+Files changed in the first vector foundation slice:
+
+- `apps/api/src/vector-db/schema.ts` - added `retrieval_chunks` table and indexes.
+- `apps/api/src/embeddings/index.ts` - implemented configurable OpenAI embedding client.
+- `apps/api/src/chunking/index.ts` - implemented deterministic Script and PM chunk builders.
+- `apps/api/src/vector-db/script-repository.ts` - added retrieval chunk replacement/storage.
+- `apps/api/src/ingestion/scripts-ingestion.service.ts` - derives, embeds, and stores Script chunks during ingestion.
+- `apps/api/src/ingestion/pm-ingestion.service.ts` - derives, embeds, and stores PM chunks during ingestion.
+- `docs/CODEX_HANDOFF.md` - recorded implementation status, validation, and remaining work.
 
 ## Important Existing Behavior - Preserve
 
@@ -135,6 +166,8 @@ Established by repository/current implementation:
 - PDF parsing is performed by Python scripts using `pdfplumber`, launched from Node.
 - Document versions are represented in `document_versions`.
 - Scripts and PM PDFs are separate document kinds: `scripts` and `pm`.
+- `retrieval_chunks` is derived search/index data only.
+- `script_entries` and `pm_references` remain authoritative for agent-visible content and source references.
 - Latest indexed document version is selected by document date and indexed time.
 - Current chat response shape is structured and source-oriented.
 - Ambiguous script matches are resolved by asking the user to select a scenario.
@@ -144,23 +177,34 @@ Explicitly approved by the user in this session:
 - Create this handoff as persistent project context.
 - Preserve current working implementation as the baseline.
 - Do not implement the RAG plan until later instruction.
+- `sayThisToCaller` must remain exact source script text. The LLM must not rewrite or paraphrase it.
+- For the first vector implementation, use `text-embedding-3-small` with 1536 dimensions.
+- Keep embedding implementation configurable so models can change later.
+- Use one deterministic derived chunk per Script entry for the first vector implementation.
+- Keep PM embeddings page-oriented and split only when a page is too large for embedding input.
+- Continue using `ensureSchema()` for now. Do not introduce a migration framework in the first vector slice.
+- Keep historical document versions for now. Do not implement archive/cleanup policy yet.
+- Do not use the chat LLM in the first vector-retrieval slice. First prove semantic/hybrid retrieval independently.
+- Admin status should distinguish active Scripts and PM document versions.
+- The UI should distinguish exact source/script wording from any future synthesized/generated answer text.
 
-Not approved:
+Still not approved:
 
 - Any change from deterministic script wording to LLM-rewritten caller wording.
-- Any specific embedding model/dimension beyond the current env variable default.
-- Any schema migration approach beyond the current `ensureSchema()` pattern.
+- Any chat LLM generation in the first vector-retrieval slice.
 - Any cleanup/archive/retention policy for old document versions.
+- Any migration framework in the first vector-retrieval slice.
 
 ## Proposed RAG Architecture
 
-PROPOSED until approved.
+PROPOSED implementation shape. The high-level direction of semantic/vector retrieval plus hybrid ranking is approved, but the exact code changes still require approval before implementation.
 
 Add semantic retrieval while preserving existing structured keyword behavior:
 
 - Embeddings:
   - Embed script scenario text, full script entries, and PM text chunks.
-  - Use `OPENAI_EMBEDDING_MODEL` from environment; current example value is `text-embedding-3-small`.
+  - APPROVED for first vector implementation: use `text-embedding-3-small` with 1536 dimensions.
+  - Keep model configuration driven by `OPENAI_EMBEDDING_MODEL` so it can change later.
 
 - pgvector:
   - Add a vector chunk table related to `document_versions`, `script_entries`, and `pm_references`.
@@ -184,52 +228,34 @@ Add semantic retrieval while preserving existing structured keyword behavior:
   - Use exact scenario/title boosts and score margins to preserve ambiguity handling.
 
 - LLM integration:
-  - Introduce the LLM only after retrieval and ambiguity handling.
+  - APPROVED: do not use chat LLM generation in the first vector-retrieval slice.
+  - Future LLM synthesis, if later approved, must happen only after retrieval and ambiguity handling.
   - Give it retrieved script and PM context only.
   - Require grounded, cited output.
   - Fall back to deterministic script response if the LLM fails or produces unsupported output.
   - Keep citation/link generation code-driven.
+  - APPROVED: `sayThisToCaller` must remain exact source script text and must not be rewritten or paraphrased by the LLM.
 
 ## Open Decisions
 
-- Decision needed: Should `sayThisToCaller` remain exact source script text?
-  - Recommended option: Keep exact script text by default.
-  - Alternative: Allow LLM to lightly rewrite caller wording.
-  - Impact: Exact text is safer for compliance and preserves current behavior; rewriting may improve readability but risks unsupported wording.
+- Decision needed: Exact hybrid scoring formula and thresholds.
+  - Recommended option: Start simple with keyword score, vector similarity, exact-title/scenario boosts, and score-margin ambiguity checks.
+  - Alternatives: Reciprocal rank fusion, learned weights, or vector-first ranking.
+  - Impact: Scoring determines whether semantic retrieval improves recall without breaking deterministic exact-match behavior.
 
-- Decision needed: Which embedding model and dimension should be used?
-  - Recommended option: Use existing `OPENAI_EMBEDDING_MODEL`, currently `text-embedding-3-small`, with its default dimensions.
-  - Alternative: Approve a different or newer embedding model.
-  - Impact: Model/dimension choice affects schema, cost, retrieval quality, and future migrations.
+- Decision needed: Exact retrieval chunk table name and deterministic ID format.
+  - Recommended option: Use a dedicated `retrieval_chunks` table with IDs derived from document version, source kind, related row ID, chunk kind, chunk index, and content hash.
+  - Alternatives: Separate script/PM vector tables or embedding columns on existing tables.
+  - Impact: A dedicated chunk table keeps vector retrieval flexible and preserves existing structured tables.
 
-- Decision needed: Should schema evolution continue through `ensureSchema()` or use migrations?
-  - Recommended option: For the prototype, continue `ensureSchema()` for the next small slice.
-  - Alternative: Introduce a migration system before vector schema changes.
-  - Impact: `ensureSchema()` is faster; migrations are safer for production/versioned database changes.
-
-- Decision needed: When should LLM generation be introduced?
-  - Recommended option: Add embeddings/vector/hybrid retrieval first, then add LLM synthesis behind fallback.
-  - Alternative: Add LLM generation in the same slice as vector retrieval.
-  - Impact: Separating retrieval from generation makes regressions easier to detect.
-
-- Decision needed: How should old document versions be retained or archived?
-  - Recommended option: Keep old indexed versions in Postgres for now; no deletion policy yet.
-  - Alternative: Add cleanup/archive policy immediately.
-  - Impact: Retention supports rollback/audit; cleanup reduces storage.
-
-- Decision needed: Should admin status expose active Scripts and PM versions separately?
-  - Recommended option: Add this later as a non-breaking API extension.
-  - Alternative: Change status contract now.
-  - Impact: Separate visibility is useful, but contract changes affect UI/API consumers.
-
-- Decision needed: Should generated answers be labeled in the UI?
-  - Recommended option: If LLM synthesis is enabled, label generated/synthesized answers.
-  - Alternative: Keep UI unchanged.
-  - Impact: Labeling improves transparency but requires frontend changes.
+- Decision needed: Whether to add focused automated tests in the first vector slice.
+  - Recommended option: Add lightweight tests or direct assertions for chunk builders and hybrid ranking if the repo test setup supports it without new dependencies.
+  - Alternatives: Use typecheck plus manual ingestion/query verification for this slice.
+  - Impact: Tests reduce regression risk, but the current repo does not appear to have an established test framework.
 
 ## Implementation Roadmap
 
-Do not implement until the proposed architecture/open decisions are approved.
+Do not implement until the user approves the first implementation slice.
 
 Phase 1 - Embedding client:
 
@@ -273,11 +299,13 @@ Phase 7 - PM hybrid references:
 - Combine keyword and vector PM results after script selection.
 - Preserve existing PM page link response shape.
 
-Phase 8 - LLM synthesis:
+Future Phase - LLM synthesis:
 
+- Do not start in the first vector-retrieval slice.
 - Implement `apps/api/src/llm/index.ts` and prompts in `apps/api/src/prompts/index.ts`.
 - Validate structured LLM output.
 - Fall back to deterministic response on failure.
+- Preserve exact source script text in `sayThisToCaller`.
 
 Phase 9 - Reliability/status hardening:
 
@@ -287,19 +315,22 @@ Phase 9 - Reliability/status hardening:
 Phase 10 - Optional UI updates:
 
 - Only after API behavior is stable.
-- Consider generated-answer labeling and richer citation display.
+- APPROVED direction: distinguish exact source/script wording from any future synthesized/generated answer text.
+- Consider generated-answer labeling and richer citation display when LLM synthesis is later approved.
 
 ## Known Issues / Incomplete Features
 
 - pgvector/vector retrieval is not implemented.
-- Embedding generation and storage are not implemented.
+- Embedding generation and storage are implemented in the ingestion path, but real private-PDF ingestion with OpenAI embeddings still needs explicit approval and a valid API key.
 - LLM integration is not implemented.
-- `apps/api/src/embeddings`, `apps/api/src/llm`, and `apps/api/src/retrieval` are placeholder modules.
+- Chat LLM generation is intentionally out of scope for the first vector-retrieval slice.
+- `apps/api/src/llm` and `apps/api/src/retrieval` are placeholder modules.
 - Upload endpoint returns `501 not_implemented`.
 - Supervisor upload/indexing/version controls are placeholders.
 - Archive behavior is not implemented despite `documents/archive`.
 - PM references are page links, not screenshots, despite the `ReferenceScreenshot` type name.
 - Current `DocumentStatusResponse.activeVersion` reports latest indexed Scripts only, not separate Scripts and PM active versions.
+- Admin status has been approved to distinguish active Scripts and PM document versions, but this is not implemented yet.
 - No automated unit/integration tests were identified.
 
 ## Environment and Commands
@@ -353,9 +384,9 @@ This handoff file is intentionally uncommitted unless the user later asks to com
 
 ## Next Task
 
-After the user approves the proposed RAG architecture and resolves the open decisions, the next development task should be:
+After the user approves the first implementation slice, the next development task should be:
 
-Implement Phase 1 and Phase 2 only: an embedding client plus deterministic chunk builders, with no changes yet to chat behavior. Validate with typecheck and focused chunk-builder tests or direct assertions.
+Complete validation of real private-PDF ingestion with embeddings after the user explicitly approves sending source PDF content to the configured embeddings provider and provides a valid `OPENAI_API_KEY`. After that, implement vector search functions and hybrid retrieval without changing `sayThisToCaller`.
 
 ## Instructions for Future Codex Sessions
 
