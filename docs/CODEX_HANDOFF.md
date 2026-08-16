@@ -16,9 +16,17 @@ This repository is currently an npm workspace monorepo:
 - Local document folders under `documents/incoming` and `documents/archive`.
 - Postgres service configured through Docker Compose using the `pgvector/pgvector:pg17` image.
 
-Current implementation is a structured keyword/trigram retrieval system backed by Postgres, with the first vector foundation slice added. Semantic/vector retrieval is not yet wired into chat behavior.
+Current implementation is a structured keyword/trigram retrieval system backed by Postgres, with the first vector foundation slice and a standalone semantic retrieval evaluation service added. Semantic/vector retrieval is not yet wired into chat behavior.
 
 Approved planned architecture is to add embeddings, pgvector-backed semantic retrieval, and hybrid ranking while preserving the existing structured response behavior. Chat LLM generation is explicitly out of scope for the first vector-retrieval slice.
+
+Current project status as of August 16, 2026:
+
+- Milestone 2 (Vector Foundation) is complete.
+- Milestone 3 has begun in evaluation mode only.
+- 908 embeddings were successfully generated and stored in `retrieval_chunks`.
+- Semantic retrieval has been implemented and validated as a standalone service.
+- The production application still uses keyword/trigram retrieval only.
 
 ## Current RAG Pipeline
 
@@ -53,24 +61,29 @@ The currently implemented flow is:
    - `apps/api/src/vector-db/script-repository.ts` stores/replaces retrieval chunks for only the document version being rebuilt.
    - `retrieval_chunks` is derived index data only; `script_entries` and `pm_references` remain authoritative.
 
-5. Keyword/trigram retrieval:
+5. Standalone semantic retrieval evaluation:
+   - `apps/api/src/retrieval/index.ts` accepts a natural-language query, generates a query embedding, searches `retrieval_chunks` with pgvector cosine similarity, and resolves top Script and PM candidates back to source rows.
+   - `apps/api/src/scripts/evaluate-semantic-retrieval.ts` compares semantic retrieval with the current keyword path on representative queries.
+   - This is evaluation-only. The application does not use semantic retrieval yet.
+
+6. Keyword/trigram retrieval:
    - `apps/api/src/vector-db/schema.ts` creates `pg_trgm` indexes for text search.
    - `searchScripts()` uses `ILIKE`, token matching, manual scoring, and latest indexed Scripts version filtering.
    - `searchPmReferences()` uses token matching against latest indexed PM references.
 
-6. Chat response construction:
+7. Chat response construction:
    - `apps/api/src/chat/chat.service.ts` builds the `ChatQueryResponse`.
    - Empty questions and no-match cases return deterministic fallback messages.
    - Short or ambiguous queries return `scenarioMatches` for user selection.
    - Selected scenario IDs bypass ambiguity and return the selected script entry.
    - `sayThisToCaller`, `notes`, `steps`, citations, and PM page references are assembled by code.
 
-7. Citations and PM page references:
+8. Citations and PM page references:
    - Script citations are generated from the matched script entry section/page.
    - PM references are returned as links to `/api/documents/latest/pm#page=N`.
    - The shared type name is `ReferenceScreenshot`, but the current implementation returns PDF page links, not generated screenshots.
 
-Explicit current limitation: pgvector schema and embedding storage are implemented, but vector retrieval/hybrid ranking are not used by chat yet. Chat LLM generation is not implemented and must not be added in the first vector retrieval slice.
+Explicit current limitation: pgvector schema, embedding storage, and standalone semantic evaluation are implemented, but vector retrieval/hybrid ranking are not used by chat yet. Chat LLM generation is not implemented and must not be added in the first vector retrieval slice.
 
 ## Repository Map
 
@@ -84,8 +97,9 @@ Explicit current limitation: pgvector schema and embedding storage are implement
 - `apps/api/src/vector-db` - Postgres client, schema setup, script/PM repository and keyword retrieval.
 - `apps/api/src/embeddings` - Configurable OpenAI embedding client.
 - `apps/api/src/llm` - Placeholder module only.
-- `apps/api/src/retrieval` - Placeholder module only.
+- `apps/api/src/retrieval` - Standalone semantic retrieval service for evaluation.
 - `apps/api/src/chunking` - Deterministic retrieval chunk builders for Scripts and PM source rows.
+- `apps/api/src/scripts/evaluate-semantic-retrieval.ts` - Standalone semantic vs keyword comparison runner.
 - `apps/web/src/app/features/auth` - Login page.
 - `apps/web/src/app/features/agent` - Agent chat workspace.
 - `apps/web/src/app/features/supervisor` - Supervisor document status placeholder.
@@ -109,6 +123,8 @@ Implemented:
 - Deterministic Script and PM chunk builders.
 - Embedding client for `text-embedding-3-small`/configured `OPENAI_EMBEDDING_MODEL`.
 - Ingestion integration that derives chunks, generates embeddings, and stores vectors for the rebuilt document version.
+- Standalone semantic retrieval service returning top Script/PM candidates with cosine similarity scores.
+- Standalone semantic evaluation script comparing semantic results with the current keyword retrieval path.
 - Deterministic chat response construction with ambiguity handling.
 - PM reference links to source PDF pages.
 - Supervisor page fetching document status.
@@ -122,10 +138,21 @@ Validation actually performed in this session:
 - Local schema inspection confirmed the `retrieval_chunks` columns and indexes.
 - Local parse/chunk verification produced 718 Script chunks and 190 PM chunks from the incoming PDFs.
 - A synthetic local insert/rollback verified the `retrieval_chunks` vector column and constraints without leaving test rows.
+- Real embeddings were generated and stored: 908 total `retrieval_chunks`, all with `vector_dims(embedding) = 1536`.
+- Standalone semantic retrieval evaluation was run for:
+  - `Provider forgot portal password`
+  - `Direct deposit`
+  - `Paid sick leave`
+  - `Timesheet payment search`
+  - `ESP password`
+- Observed evaluation results:
+  - Semantic retrieval clearly outperformed keyword retrieval on paraphrased portal-password queries.
+  - Keyword retrieval outperformed semantic retrieval on some exact phrase queries such as `Paid sick leave`.
+  - Semantic retrieval for `Direct deposit` and `Paid sick leave` exposed source-data quality issues where fragmented Script rows with weak content can rank too highly.
+  - `Timesheet payment search` produced strong semantic matches for both Script and PM content.
+  - `ESP password` produced relevant semantic matches, but exact keyword retrieval still surfaced the most direct forgot-password Script row first.
 
 No automated unit/integration test suite was identified or run.
-
-Full private-PDF ingestion with real OpenAI embeddings was not completed because the validator rejected exporting private PDF content to the external OpenAI embeddings API, and a benign embedding smoke test failed because the environment used a placeholder API key.
 
 Files changed in the first vector foundation slice:
 
@@ -137,12 +164,20 @@ Files changed in the first vector foundation slice:
 - `apps/api/src/ingestion/pm-ingestion.service.ts` - derives, embeds, and stores PM chunks during ingestion.
 - `docs/CODEX_HANDOFF.md` - recorded implementation status, validation, and remaining work.
 
+Files changed in the standalone semantic retrieval slice:
+
+- `apps/api/src/retrieval/index.ts` - implemented standalone semantic retrieval service.
+- `apps/api/src/scripts/evaluate-semantic-retrieval.ts` - implemented semantic vs keyword evaluation runner.
+- `apps/api/package.json` - added semantic evaluation script command.
+- `docs/CODEX_HANDOFF.md` - recorded semantic retrieval milestone and evaluation results.
+
 ## Important Existing Behavior - Preserve
 
 Future changes must preserve the current baseline unless the user explicitly approves replacement:
 
 - Do not remove existing keyword/trigram retrieval; integrate semantic retrieval around it.
 - Preserve `ChatQueryRequest` and `ChatQueryResponse` initially.
+- Do not change `chat.service.ts` or wire semantic retrieval into the live chat path until evaluation results are explicitly approved.
 - Preserve deterministic empty-question and no-match responses.
 - Preserve short/ambiguous query behavior that returns `scenarioMatches`.
 - Preserve selected scenario behavior using `selectedScenarioId`.
@@ -168,6 +203,8 @@ Established by repository/current implementation:
 - Scripts and PM PDFs are separate document kinds: `scripts` and `pm`.
 - `retrieval_chunks` is derived search/index data only.
 - `script_entries` and `pm_references` remain authoritative for agent-visible content and source references.
+- Semantic retrieval must be evaluated independently before any hybrid integration into chat.
+- Keyword retrieval is still the current production retrieval path.
 - Latest indexed document version is selected by document date and indexed time.
 - Current chat response shape is structured and source-oriented.
 - Ambiguous script matches are resolved by asking the user to select a scenario.
@@ -187,6 +224,12 @@ Explicitly approved by the user in this session:
 - Do not use the chat LLM in the first vector-retrieval slice. First prove semantic/hybrid retrieval independently.
 - Admin status should distinguish active Scripts and PM document versions.
 - The UI should distinguish exact source/script wording from any future synthesized/generated answer text.
+- Build a semantic retrieval service that can be evaluated independently before integration.
+- Semantic retrieval outperforms keyword retrieval for paraphrased queries.
+- Keyword retrieval remains stronger for some exact phrase queries.
+- Low-quality semantic matches are caused by parser-generated fragmented Script rows.
+- Recommended next step before hybrid retrieval: filter low-information Script rows during chunk generation only.
+- Do not modify parser output or authoritative `script_entries` yet.
 
 Still not approved:
 
@@ -252,6 +295,11 @@ Add semantic retrieval while preserving existing structured keyword behavior:
   - Recommended option: Add lightweight tests or direct assertions for chunk builders and hybrid ranking if the repo test setup supports it without new dependencies.
   - Alternatives: Use typecheck plus manual ingestion/query verification for this slice.
   - Impact: Tests reduce regression risk, but the current repo does not appear to have an established test framework.
+
+- Decision needed: Whether to clean up fragmented Script source rows before hybrid retrieval.
+  - Recommended option: Filter low-information Script rows during chunk generation only before hybrid integration.
+  - Alternatives: Parser cleanup first, or compensate purely in ranking logic.
+  - Impact: Fragmented rows are already affecting semantic match quality for some queries such as `Direct deposit` and `Paid sick leave`, but authoritative `script_entries` should remain unchanged for now.
 
 ## Implementation Roadmap
 
@@ -320,11 +368,13 @@ Phase 10 - Optional UI updates:
 
 ## Known Issues / Incomplete Features
 
-- pgvector/vector retrieval is not implemented.
-- Embedding generation and storage are implemented in the ingestion path, but real private-PDF ingestion with OpenAI embeddings still needs explicit approval and a valid API key.
+- Semantic/vector retrieval is implemented only as a standalone evaluation path, not in live chat.
+- Embedding generation and storage are implemented in the ingestion path and have been validated with real stored embeddings.
 - LLM integration is not implemented.
 - Chat LLM generation is intentionally out of scope for the first vector-retrieval slice.
-- `apps/api/src/llm` and `apps/api/src/retrieval` are placeholder modules.
+- `apps/api/src/llm` is still a placeholder module.
+- Some parsed Script source rows appear fragmented or low-information and can produce weak semantic matches.
+- No semantic-index filtering has been applied yet, so parser-generated low-information Script rows are still embedded.
 - Upload endpoint returns `501 not_implemented`.
 - Supervisor upload/indexing/version controls are placeholders.
 - Archive behavior is not implemented despite `documents/archive`.
@@ -384,9 +434,20 @@ This handoff file is intentionally uncommitted unless the user later asks to com
 
 ## Next Task
 
-After the user approves the first implementation slice, the next development task should be:
+Implement semantic-index filtering for low-information Script rows, regenerate Script embeddings, rerun semantic evaluation, and compare before/after results before beginning hybrid retrieval.
 
-Complete validation of real private-PDF ingestion with embeddings after the user explicitly approves sending source PDF content to the configured embeddings provider and provides a valid `OPENAI_API_KEY`. After that, implement vector search functions and hybrid retrieval without changing `sayThisToCaller`.
+## Today Summary
+
+- Milestone 2 (Vector Foundation) was completed successfully.
+- The environment-loading issue was fixed so workspace scripts consistently load the repository root `.env`.
+- Real embeddings were generated successfully using the configured `OPENAI_API_KEY`.
+- 908 total `retrieval_chunks` were stored and validated in Postgres.
+- All stored embeddings were confirmed to have `vector_dims(embedding) = 1536`.
+- Semantic retrieval was implemented as a standalone evaluation path only.
+- The live application remained unchanged and continues to use keyword/trigram retrieval.
+- Semantic retrieval performed better than keyword retrieval for paraphrased queries such as portal-password variants.
+- Keyword retrieval remained stronger for some exact phrase queries such as `Paid sick leave`.
+- The main retrieval-quality issue is parser-generated fragmented Script rows; the next step is to filter low-information Script rows during chunk generation only, without changing parser output or authoritative `script_entries`.
 
 ## Instructions for Future Codex Sessions
 
