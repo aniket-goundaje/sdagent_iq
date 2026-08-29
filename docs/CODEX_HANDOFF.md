@@ -31,6 +31,7 @@ Current project status as of August 29, 2026:
 - The production application now uses hybrid retrieval in chat, with a keyword-only fallback mode available through `CHAT_RETRIEVAL_MODE=keyword`.
 - UI Sprint 1 has started with the agent workspace only: the center answer area is wider, side rails are sticky, the composer is more chat-like, and the answer hierarchy is more prominent without changing behavior.
 - UI Sprint 2 tightened the agent answer rendering so `Say this to caller` uses natural paragraph flow again, and sidebar-driven answers now scroll to the rendered response row after Angular stabilizes.
+- UI Sprint 3 focuses on launch polish for the agent workspace: the composer now behaves like a chat input, recent and usually asked questions show an immediate loading state, matching question cards feel interactive, and lightweight feedback is captured locally below completed answers.
 
 ## Current RAG Pipeline
 
@@ -169,6 +170,7 @@ Validation actually performed in this session:
 - On August 29, 2026, `npm run build:api` and `npm run typecheck` completed successfully after the hybrid chat integration.
 - On August 29, 2026, the agent workspace UI was polished for Sprint 1 and the live Angular dev server rebuilt successfully with the updated layout.
 - On August 29, 2026, the agent workspace UI Sprint 2 fixed the answer text width problem, added render-stable scrolling for sidebar-driven questions, and kept PM reference cards compact.
+- On August 29, 2026, the agent workspace UI Sprint 3 polished the chat composer, added immediate loading placeholders and stable conversation flow, and introduced local feedback capture under completed answers.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -207,6 +209,13 @@ Files changed in the hybrid retrieval slice:
 - `apps/api/src/config/env.ts` - added `CHAT_RETRIEVAL_MODE` to control chat retrieval mode.
 - `apps/api/src/retrieval/hybrid.ts` - implemented the simple hybrid merge and scoring layer for Scripts and PM references.
 - `docs/CODEX_HANDOFF.md` - recorded the hybrid milestone, validation, and fallback mode.
+
+Files changed in UI Sprint 3:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - added Enter-to-send handling, immediate assistant placeholders, stable scrolling, and local feedback persistence.
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - added the modern composer structure, pending-state placeholders, interactive scenario cards, and feedback controls.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - polished the composer, question cards, button states, and feedback panel styling.
+- `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 3 milestone and validation notes.
 
 ## Important Existing Behavior - Preserve
 

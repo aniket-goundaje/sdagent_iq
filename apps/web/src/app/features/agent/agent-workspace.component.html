@@ -3,7 +3,7 @@
     <h3>Recent questions</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of recent()">
-        <button mat-button type="button" (click)="ask(item.question)">{{ item.question }}</button>
+        <button mat-button type="button" [disabled]="isThinking()" (click)="ask(item.question)">{{ item.question }}</button>
       </mat-list-item>
     </mat-list>
   </aside>
@@ -25,7 +25,7 @@
       <article
         class="message"
         #messageRow
-        *ngFor="let message of messages()"
+        *ngFor="let message of messages(); trackBy: trackByMessageId"
         [class.message-user]="message.role === 'user'"
         [class.message-assistant]="message.role === 'assistant'"
       >
@@ -41,7 +41,7 @@
             <span class="thinking-dot"></span>
             <span class="thinking-dot"></span>
             <span class="thinking-dot"></span>
-            <span>{{ pendingMessage }}</span>
+            <span>{{ getLoadingMessage(message.question) }}</span>
           </div>
         </div>
 
@@ -50,7 +50,7 @@
             <h3>Matching script questions</h3>
             <p class="section-copy">Choose the closest script question to load the exact caller wording.</p>
             <div class="scenario-chip-list">
-              <button class="scenario-chip" type="button" *ngFor="let match of result.scenarioMatches" (click)="chooseScenario(match)">
+              <button class="scenario-chip" type="button" [disabled]="isThinking()" *ngFor="let match of result.scenarioMatches" (click)="chooseScenario(match)">
                 {{ match.scenarioText }}
               </button>
             </div>
@@ -93,23 +93,65 @@
               <p class="empty-state">No PM reference links for this answer yet.</p>
             </ng-template>
           </section>
+
+          <section class="feedback-panel" *ngIf="result.scenarioMatches.length === 0">
+            <h3>Feedback</h3>
+            <div class="feedback-actions">
+              <button
+                class="feedback-choice"
+                type="button"
+                [class.is-selected]="message.feedback?.choice === 'helpful'"
+                [disabled]="isThinking()"
+                (click)="chooseFeedback(message.id, 'helpful')"
+                [attr.aria-pressed]="message.feedback?.choice === 'helpful'"
+              >
+                <span>✅ This answered my question</span>
+              </button>
+
+              <button
+                class="feedback-choice"
+                type="button"
+                [class.is-selected]="message.feedback?.choice === 'not_helpful'"
+                [disabled]="isThinking()"
+                (click)="chooseFeedback(message.id, 'not_helpful')"
+                [attr.aria-pressed]="message.feedback?.choice === 'not_helpful'"
+              >
+                <span>❌ I couldn't find what I needed</span>
+              </button>
+            </div>
+
+            <div class="feedback-comments" *ngIf="isFeedbackExpanded(message)">
+              <label [attr.for]="message.id + '-feedback'">What was missing or incorrect?</label>
+              <textarea
+                [id]="message.id + '-feedback'"
+                rows="2"
+                [ngModel]="message.feedback?.comments ?? ''"
+                (ngModelChange)="updateFeedbackComments(message.id, $event)"
+                placeholder="What was missing or incorrect?"
+              ></textarea>
+            </div>
+          </section>
         </div>
       </article>
     </section>
 
     <mat-card class="composer">
       <div class="composer-shell">
-        <textarea
-          matInput
-          class="composer-input"
-          [ngModel]="question()"
-          (ngModelChange)="question.set($event)"
-          rows="3"
-          placeholder="Ask a service desk question"
-        ></textarea>
+        <div class="composer-input-shell">
+          <textarea
+            #composerInput
+            matInput
+            class="composer-input"
+            [ngModel]="question()"
+            (ngModelChange)="question.set($event)"
+            rows="2"
+            placeholder="Ask a service desk question"
+            (keydown)="onComposerKeydown($event)"
+          ></textarea>
+        </div>
         <div class="composer-actions">
-          <button mat-flat-button color="primary" type="button" (click)="ask(question())" [disabled]="isThinking()">
-            {{ isThinking() ? "Thinking..." : "Ask" }}
+          <button mat-flat-button color="primary" type="button" class="composer-submit" (click)="submitQuestion()" [disabled]="!canSubmit()">
+            {{ isThinking() ? "Searching..." : "Ask" }}
           </button>
         </div>
       </div>
@@ -120,7 +162,7 @@
     <h3>Usually asked</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of common()">
-        <button mat-button type="button" (click)="ask(item)">{{ item }}</button>
+        <button mat-button type="button" [disabled]="isThinking()" (click)="ask(item)">{{ item }}</button>
       </mat-list-item>
     </mat-list>
   </aside>
