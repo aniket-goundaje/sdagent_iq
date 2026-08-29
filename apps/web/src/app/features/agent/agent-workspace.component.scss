@@ -5,8 +5,9 @@
   gap: 1rem;
   padding: 1rem;
   background:
-    radial-gradient(circle at top center, rgba(85, 199, 133, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(244, 247, 250, 0.96) 100%);
+    radial-gradient(circle at 50% 0%, rgba(225, 25, 55, 0.08), transparent 24%),
+    radial-gradient(circle at 20% 12%, rgba(0, 47, 108, 0.06), transparent 22%),
+    linear-gradient(180deg, rgba(248, 250, 253, 0.98) 0%, rgba(238, 242, 247, 1) 100%);
   align-items: start;
 }
 
@@ -23,6 +24,13 @@
   max-width: none;
   width: 100%;
   min-width: 0;
+  padding: 0.35rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(249, 251, 253, 0.9));
+  border: 1px solid rgba(21, 34, 56, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 20px 44px rgba(21, 34, 56, 0.05);
 }
 
 .rail {
@@ -31,16 +39,17 @@
   max-height: calc(100vh - 2rem);
   overflow: auto;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--cgi-border);
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(21, 34, 56, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(249, 251, 253, 0.96));
+  border: 1px solid rgba(21, 34, 56, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 14px 32px rgba(21, 34, 56, 0.06);
 }
 
 .rail h3 {
   margin: 0;
   font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  font-weight: 700;
   color: rgba(21, 34, 56, 0.8);
 }
 
@@ -51,18 +60,19 @@ mat-list {
 }
 
 .chat-header {
-  padding: 1.1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--cgi-border);
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 22px rgba(21, 34, 56, 0.05);
+  padding: 1.1rem 1.3rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 253, 0.98));
+  border: 1px solid rgba(21, 34, 56, 0.08);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 30px rgba(21, 34, 56, 0.06);
 }
 
 .chat-header h2 {
   margin: 0 0 0.35rem;
   font-size: 1.35rem;
   line-height: 1.2;
+  letter-spacing: 0;
 }
 
 .chat-header p {
@@ -75,9 +85,9 @@ mat-list {
 .chat-thread {
   display: grid;
   align-content: start;
-  gap: 1.1rem;
+  gap: 1.2rem;
   overflow: auto;
-  padding: 0.25rem 0.1rem 0.75rem;
+  padding: 0.35rem 0.1rem 0.85rem;
   scroll-behavior: smooth;
 }
 
@@ -85,9 +95,9 @@ mat-list {
   width: 100%;
   margin: 0.5rem 0 1rem;
   padding: 1.25rem 1.4rem;
-  border: 1px dashed rgba(21, 34, 56, 0.16);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px dashed rgba(21, 34, 56, 0.14);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(246, 248, 251, 0.96));
 }
 
 .empty-thread h3,
@@ -97,6 +107,7 @@ mat-list {
 
 .empty-thread h3 {
   font-size: 1.05rem;
+  letter-spacing: 0;
 }
 
 .empty-thread p {
@@ -107,7 +118,7 @@ mat-list {
 
 .message {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .message-user {
@@ -121,18 +132,19 @@ mat-list {
 .message-label {
   font-size: 0.8rem;
   font-weight: 600;
+  letter-spacing: 0;
   color: rgba(21, 34, 56, 0.58);
 }
 
 .message-bubble {
   width: 100%;
-  border-radius: 16px;
-  border: 1px solid var(--cgi-border);
+  border-radius: 18px;
+  border: 1px solid rgba(21, 34, 56, 0.08);
 }
 
 .message-user .message-bubble {
   width: fit-content;
-  max-width: min(100%, 52rem);
+  max-width: min(100%, 54rem);
 }
 
 .message:not(.message-user) .message-bubble {
@@ -140,48 +152,74 @@ mat-list {
 }
 
 .user-bubble {
-  padding: 0.95rem 1rem;
-  background: linear-gradient(135deg, rgba(225, 25, 55, 0.96), rgba(122, 57, 173, 0.9));
+  padding: 1rem 1.05rem;
+  background: linear-gradient(135deg, rgba(225, 25, 55, 0.97), rgba(122, 57, 173, 0.94));
   color: white;
   line-height: 1.55;
-  box-shadow: 0 12px 26px rgba(21, 34, 56, 0.08);
+  border: 0;
+  box-shadow: 0 16px 30px rgba(21, 34, 56, 0.12);
 }
 
 .assistant-bubble {
   display: grid;
-  gap: 0.95rem;
-  padding: 1.2rem 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 28px rgba(21, 34, 56, 0.07);
+  gap: 1rem;
+  padding: 1.25rem 1.3rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 254, 0.99));
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 20px 36px rgba(21, 34, 56, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .composer {
   position: sticky;
   bottom: 0;
   padding: 0;
-  border-radius: 16px;
-  border: 1px solid var(--cgi-border);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 18px 40px rgba(21, 34, 56, 0.08);
+  border-radius: 22px;
+  border: 1px solid rgba(21, 34, 56, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995), rgba(243, 246, 250, 0.995)),
+    radial-gradient(circle at 20% 0%, rgba(225, 25, 55, 0.1), transparent 34%);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 32px 64px rgba(21, 34, 56, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
   overflow: hidden;
 }
 
 .composer-shell {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.9rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  padding: 1.15rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: end;
 }
 
+.composer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 34, 56, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(21, 34, 56, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .composer-input-shell {
-  border-radius: 16px;
-  border: 1px solid rgba(21, 34, 56, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  border-radius: 22px;
+  border: 1px solid rgba(21, 34, 56, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.998), rgba(242, 246, 250, 0.995)),
+    radial-gradient(circle at top left, rgba(225, 25, 55, 0.07), transparent 38%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  padding: 0.7rem 0.9rem 0.65rem;
+  padding: 1rem 1.05rem 0.92rem;
   transition:
     border-color 140ms ease,
     box-shadow 140ms ease,
@@ -189,10 +227,11 @@ mat-list {
 }
 
 .composer-input-shell:focus-within {
-  border-color: rgba(225, 25, 55, 0.28);
+  border-color: rgba(225, 25, 55, 0.46);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 0 3px rgba(225, 25, 55, 0.08);
+    0 0 0 4px rgba(225, 25, 55, 0.14),
+    0 16px 30px rgba(21, 34, 56, 0.09);
 }
 
 .composer-actions {
@@ -203,9 +242,17 @@ mat-list {
 }
 
 .composer-submit {
-  min-width: 7rem;
+  min-width: 9.5rem;
+  min-height: 3.55rem;
+  padding-inline: 1.65rem;
   border-radius: 999px;
-  box-shadow: 0 10px 20px rgba(225, 25, 55, 0.18);
+  border: 0;
+  background: linear-gradient(135deg, rgba(225, 25, 55, 1), rgba(122, 57, 173, 0.98));
+  color: white !important;
+  font-weight: 700;
+  font-size: 1.03rem;
+  letter-spacing: 0.01em;
+  box-shadow: 0 20px 32px rgba(225, 25, 55, 0.28);
   transition:
     transform 120ms ease,
     box-shadow 120ms ease,
@@ -214,7 +261,7 @@ mat-list {
 
 .composer-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 14px 24px rgba(225, 25, 55, 0.22);
+  box-shadow: 0 24px 40px rgba(225, 25, 55, 0.34);
 }
 
 .composer-submit:active:not(:disabled) {
@@ -228,7 +275,7 @@ mat-list {
 }
 
 .composer-input {
-  min-height: 4.25rem;
+  min-height: 4.5rem;
   resize: vertical;
   border: 0;
   outline: 0;
@@ -241,14 +288,15 @@ mat-list {
 }
 
 .composer-input::placeholder {
-  color: rgba(21, 34, 56, 0.42);
+  color: rgba(21, 34, 56, 0.58);
+  font-size: 1.04rem;
 }
 
 .answer-section {
   display: grid;
-  gap: 0.7rem;
-  padding: 0.95rem 0 1rem;
-  border-bottom: 1px solid var(--cgi-border);
+  gap: 0.72rem;
+  padding: 0.98rem 0 1.02rem;
+  border-bottom: 1px solid rgba(21, 34, 56, 0.08);
 }
 
 .answer-section:last-child {
@@ -258,35 +306,46 @@ mat-list {
 
 .answer-section h3 {
   margin: 0;
-  font-size: 0.86rem;
-  letter-spacing: 0.03em;
+  font-size: 0.88rem;
+  letter-spacing: 0;
+  font-weight: 700;
   text-transform: uppercase;
   color: rgba(21, 34, 56, 0.7);
 }
 
 .answer-section--primary {
-  gap: 0.85rem;
-  padding: 1rem 1rem 1.05rem;
-  background: rgba(21, 34, 56, 0.03);
-  border: 1px solid rgba(21, 34, 56, 0.08);
-  border-radius: 14px;
+  gap: 0.9rem;
+  padding: 1.08rem 1.08rem 1.12rem;
+  background:
+    linear-gradient(180deg, rgba(225, 25, 55, 0.04), rgba(21, 34, 56, 0.02)),
+    rgba(21, 34, 56, 0.02);
+  border: 1px solid rgba(225, 25, 55, 0.14);
+  border-radius: 18px;
+  box-shadow: inset 4px 0 0 rgba(225, 25, 55, 0.45);
 }
 
 .answer-section--primary h3 {
-  font-size: 0.92rem;
-  color: rgba(21, 34, 56, 0.82);
+  font-size: 0.96rem;
+  color: rgba(21, 34, 56, 0.88);
 }
 
 .answer-section--primary .answer-copy {
   width: 100%;
   max-width: none;
   display: block;
-  font-size: 1.04rem;
-  line-height: 1.8;
+  font-size: 1.06rem;
+  line-height: 1.82;
 }
 
 .answer-section--supporting {
-  padding-top: 0.9rem;
+  padding: 0.96rem 1.02rem 1rem;
+  background: rgba(21, 34, 56, 0.02);
+  border: 1px solid rgba(21, 34, 56, 0.05);
+  border-radius: 16px;
+}
+
+.answer-section--supporting h3 {
+  color: rgba(21, 34, 56, 0.66);
 }
 
 .answer-section--compact {
@@ -301,8 +360,24 @@ mat-list {
 }
 
 .answer-copy {
-  line-height: 1.72;
+  line-height: 1.8;
   white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.answer-note-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.answer-note-item {
+  margin: 0;
+  padding: 0;
+  line-height: 1.82;
+  font-size: 1.03rem;
+  color: rgba(21, 34, 56, 0.78);
   overflow-wrap: break-word;
 }
 
@@ -342,9 +417,9 @@ mat-list {
   align-items: center;
   gap: 0.65rem;
   padding: 0.65rem 0.85rem;
-  border: 1px solid var(--cgi-border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(21, 34, 56, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
   text-align: left;
   color: inherit;
   text-decoration: none;
@@ -364,9 +439,9 @@ mat-list {
 
 .scenario-chip:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(225, 25, 55, 0.24);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 20px rgba(21, 34, 56, 0.06);
+  border-color: rgba(225, 25, 55, 0.26);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 10px 22px rgba(21, 34, 56, 0.08);
 }
 
 .scenario-chip:active:not(:disabled) {
@@ -384,8 +459,8 @@ mat-list {
 
 .scenario-chip:hover,
 .reference-link:hover {
-  border-color: rgba(225, 25, 55, 0.35);
-  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(225, 25, 55, 0.32);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .reference-link span:last-child {
@@ -399,7 +474,7 @@ mat-list {
   justify-content: flex-start;
   white-space: normal;
   text-align: left;
-  border-radius: 12px;
+  border-radius: 14px;
   transition:
     background-color 120ms ease,
     transform 120ms ease,
@@ -418,14 +493,18 @@ mat-list {
 
 .feedback-panel {
   display: grid;
-  gap: 0.75rem;
-  padding-top: 0.15rem;
+  gap: 0.8rem;
+  padding: 0.92rem 1rem 1rem;
+  background: rgba(21, 34, 56, 0.02);
+  border: 1px solid rgba(21, 34, 56, 0.05);
+  border-radius: 16px;
 }
 
 .feedback-panel h3 {
   margin: 0;
   font-size: 0.86rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0;
+  font-weight: 700;
   text-transform: uppercase;
   color: rgba(21, 34, 56, 0.7);
 }
@@ -433,7 +512,7 @@ mat-list {
 .feedback-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.7rem;
 }
 
 .feedback-choice {
@@ -441,12 +520,13 @@ mat-list {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.8rem 0.9rem;
-  border: 1px solid rgba(21, 34, 56, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 0.88rem 0.95rem;
+  border: 1px solid rgba(21, 34, 56, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 253, 0.98));
   color: var(--cgi-ink);
   font: inherit;
+  font-weight: 600;
   line-height: 1.4;
   cursor: pointer;
   transition:
@@ -459,14 +539,14 @@ mat-list {
 .feedback-choice:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(225, 25, 55, 0.24);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 18px rgba(21, 34, 56, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 250, 253, 1));
+  box-shadow: 0 10px 20px rgba(21, 34, 56, 0.07);
 }
 
 .feedback-choice.is-selected {
   border-color: rgba(225, 25, 55, 0.3);
-  background: rgba(225, 25, 55, 0.06);
-  box-shadow: 0 8px 18px rgba(21, 34, 56, 0.05);
+  background: linear-gradient(180deg, rgba(225, 25, 55, 0.08), rgba(122, 57, 173, 0.05));
+  box-shadow: 0 10px 20px rgba(21, 34, 56, 0.07);
 }
 
 .feedback-choice:disabled {
@@ -480,6 +560,8 @@ mat-list {
 
 .feedback-comments label {
   font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0;
   color: rgba(21, 34, 56, 0.75);
 }
 
@@ -488,12 +570,13 @@ mat-list {
   min-height: 4.5rem;
   resize: vertical;
   padding: 0.8rem 0.9rem;
-  border: 1px solid rgba(21, 34, 56, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(21, 34, 56, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
   color: var(--cgi-ink);
   font: inherit;
   line-height: 1.55;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .feedback-comments textarea::placeholder {

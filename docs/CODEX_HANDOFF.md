@@ -32,6 +32,10 @@ Current project status as of August 29, 2026:
 - UI Sprint 1 has started with the agent workspace only: the center answer area is wider, side rails are sticky, the composer is more chat-like, and the answer hierarchy is more prominent without changing behavior.
 - UI Sprint 2 tightened the agent answer rendering so `Say this to caller` uses natural paragraph flow again, and sidebar-driven answers now scroll to the rendered response row after Angular stabilizes.
 - UI Sprint 3 focuses on launch polish for the agent workspace: the composer now behaves like a chat input, recent and usually asked questions show an immediate loading state, matching question cards feel interactive, and lightweight feedback is captured locally below completed answers.
+- UI Sprint 4 further sharpened the visual hierarchy so the page feels closer to an enterprise SaaS product: the center lane, answer card, composer, references, and feedback now have stronger contrast, softer borders, and more consistent elevation.
+- UI Sprint 5 gives the composer the strongest visual emphasis on the page, renders Notes as comfortable wrapped reading content, and further reduces the flat white-card feel without changing workflows.
+- UI Sprint 6 finalizes the visual polish: Notes now render as readable bullet items, the composer feels more prominent, the Ask button stands out as the primary action, and the page surfaces are even softer and cleaner.
+- UI Sprint 6 also corrected the remaining Notes wrapping issue by removing the narrow list gutter so the notes can use the full content width like the main answer.
 
 ## Current RAG Pipeline
 
@@ -171,6 +175,10 @@ Validation actually performed in this session:
 - On August 29, 2026, the agent workspace UI was polished for Sprint 1 and the live Angular dev server rebuilt successfully with the updated layout.
 - On August 29, 2026, the agent workspace UI Sprint 2 fixed the answer text width problem, added render-stable scrolling for sidebar-driven questions, and kept PM reference cards compact.
 - On August 29, 2026, the agent workspace UI Sprint 3 polished the chat composer, added immediate loading placeholders and stable conversation flow, and introduced local feedback capture under completed answers.
+- On August 29, 2026, the agent workspace UI Sprint 4 tuned the visual hierarchy, card contrast, button prominence, and feedback presentation without changing workflows.
+- On August 29, 2026, the agent workspace UI Sprint 5 strengthened the composer CTA, improved Notes readability, and refined the hierarchy without adding new colors or layout changes.
+- On August 29, 2026, the agent workspace UI Sprint 6 finalized the visual polish by improving Notes wrapping, composer emphasis, and primary-action prominence.
+- On August 29, 2026, the agent workspace UI Sprint 6 also removed the narrow Notes gutter so the notes read as full-width content rather than a compressed column.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -216,6 +224,23 @@ Files changed in UI Sprint 3:
 - `apps/web/src/app/features/agent/agent-workspace.component.html` - added the modern composer structure, pending-state placeholders, interactive scenario cards, and feedback controls.
 - `apps/web/src/app/features/agent/agent-workspace.component.scss` - polished the composer, question cards, button states, and feedback panel styling.
 - `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 3 milestone and validation notes.
+
+Files changed in UI Sprint 4:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - deepened the page hierarchy, improved surface contrast, strengthened the Ask button, and refined the answer and feedback presentation.
+- `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 4 milestone and validation notes.
+
+Files changed in UI Sprint 5:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - rendered Notes as wrapped reading content instead of a narrow bullet list.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthened the composer CTA, improved Notes readability, and tuned section hierarchy and surfaces.
+- `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 5 milestone and validation notes.
+
+Files changed in UI Sprint 6:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - rendered Notes as readable bullet items and added a small composer icon cue.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthened the composer emphasis, improved Notes wrapping and spacing, and reduced the flat white-card feel.
+- `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 6 milestone and validation notes.
 
 ## Important Existing Behavior - Preserve
 

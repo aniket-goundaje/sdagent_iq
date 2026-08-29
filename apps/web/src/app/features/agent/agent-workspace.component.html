@@ -63,9 +63,9 @@
 
           <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
             <h3>Notes</h3>
-            <ul>
-              <li *ngFor="let note of result.notes">{{ note }}</li>
-            </ul>
+            <div class="answer-note-list">
+              <p class="answer-note-item" *ngFor="let note of result.notes">{{ note }}</p>
+            </div>
           </section>
 
           <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
@@ -137,6 +137,7 @@
 
     <mat-card class="composer">
       <div class="composer-shell">
+        <span class="composer-icon" aria-hidden="true">↳</span>
         <div class="composer-input-shell">
           <textarea
             #composerInput
