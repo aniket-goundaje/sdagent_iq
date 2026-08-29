@@ -1,10 +1,11 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, signal } from "@angular/core";
+import { Component, ElementRef, NgZone, QueryList, ViewChildren, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
+import { take } from "rxjs";
 
 import type { ChatQueryResponse, CommonQuestionsResponse, ParsedScriptScenarioMatch, RecentQuestionsResponse } from "@sd-agent-iq/shared";
 
@@ -27,9 +28,13 @@ interface ChatMessage {
 })
 export class AgentWorkspaceComponent {
   private readonly api = inject(ApiService);
+  private readonly zone = inject(NgZone);
+
+  @ViewChildren("messageRow") private messageRows?: QueryList<ElementRef<HTMLElement>>;
 
   readonly question = signal("");
   readonly isThinking = signal(false);
+  readonly pendingMessage = "Finding the best matching caller script...";
   readonly recent = signal<RecentQuestionsResponse["items"]>([]);
   readonly common = signal<CommonQuestionsResponse["items"]>([]);
   readonly messages = signal<ChatMessage[]>([]);
@@ -42,7 +47,7 @@ export class AgentWorkspaceComponent {
   ask(question: string, selectedScenarioId?: string | null) {
     const trimmed = question.trim();
 
-    if (!trimmed) {
+    if (!trimmed || this.isThinking()) {
       return;
     }
 
@@ -64,6 +69,7 @@ export class AgentWorkspaceComponent {
         pending: true
       }
     ]);
+    this.scrollLatestAnswerIntoView();
 
     this.api.queryChat({ question: trimmed, selectedScenarioId: selectedScenarioId ?? null }).subscribe({
       next: (payload) => {
@@ -121,5 +127,20 @@ export class AgentWorkspaceComponent {
 
   chooseScenario(match: ParsedScriptScenarioMatch) {
     this.ask(match.scenarioText, match.id);
+  }
+
+  private scrollLatestAnswerIntoView() {
+    this.zone.onStable.pipe(take(1)).subscribe(() => {
+      const latestRow = this.messageRows?.last?.nativeElement;
+
+      if (!latestRow) {
+        return;
+      }
+
+      latestRow.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
   }
 }

@@ -29,6 +29,8 @@ Current project status as of August 29, 2026:
 - Semantic-index filtering for low-information Script rows has been implemented in chunk generation.
 - Local chunk validation shows Script semantic chunks decreased from 718 to 580, filtering out 138 low-information rows before embedding.
 - The production application now uses hybrid retrieval in chat, with a keyword-only fallback mode available through `CHAT_RETRIEVAL_MODE=keyword`.
+- UI Sprint 1 has started with the agent workspace only: the center answer area is wider, side rails are sticky, the composer is more chat-like, and the answer hierarchy is more prominent without changing behavior.
+- UI Sprint 2 tightened the agent answer rendering so `Say this to caller` uses natural paragraph flow again, and sidebar-driven answers now scroll to the rendered response row after Angular stabilizes.
 
 ## Current RAG Pipeline
 
@@ -86,7 +88,11 @@ The currently implemented flow is:
    - PM references are returned as links to `/api/documents/latest/pm#page=N`.
    - The shared type name is `ReferenceScreenshot`, but the current implementation returns PDF page links, not generated screenshots.
 
-Explicit current limitation: pgvector schema, embedding storage, and standalone semantic evaluation are implemented, but vector retrieval/hybrid ranking are not used by chat yet. Chat LLM generation is not implemented and must not be added in the first vector retrieval slice.
+9. Frontend API routing:
+   - `apps/web/src/app/core/api.service.ts` now targets `/api` so the browser talks to the Angular dev server origin.
+   - `angular.json` routes `/api` through `apps/web/proxy.conf.json` to the local Express API on port 3000.
+
+Explicit current limitation: chat LLM generation is still out of scope. The live chat flow already uses the hybrid retrieval pipeline, with keyword-only fallback available through configuration.
 
 ## Repository Map
 
@@ -161,11 +167,15 @@ Validation actually performed in this session:
 - On August 29, 2026, improved ingestion logging exposed the actual failure as `AggregateError [EPERM]` from `pg-pool` during `ensureSchema()`, which indicates the process could not open the local Postgres connection in this sandbox.
 - On August 29, 2026, a hybrid retrieval pipeline was integrated into chat with a keyword-only fallback mode controlled by `CHAT_RETRIEVAL_MODE`.
 - On August 29, 2026, `npm run build:api` and `npm run typecheck` completed successfully after the hybrid chat integration.
+- On August 29, 2026, the agent workspace UI was polished for Sprint 1 and the live Angular dev server rebuilt successfully with the updated layout.
+- On August 29, 2026, the agent workspace UI Sprint 2 fixed the answer text width problem, added render-stable scrolling for sidebar-driven questions, and kept PM reference cards compact.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
   - `Direct deposit` still prompts for scenario selection.
   - `Where do I send my timesheet?` still returns the exact caller script and citations.
+- On August 29, 2026, the Angular dev server was restarted on `http://127.0.0.1:4301/` with an API proxy in place, and `POST /api/auth/login` returned `200 OK` for both demo accounts through the web origin.
+- On August 29, 2026, `npm run typecheck` completed successfully after the login proxy change.
 
 No automated unit/integration test suite was identified or run.
 

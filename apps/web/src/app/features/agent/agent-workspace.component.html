@@ -1,5 +1,5 @@
 <div class="workspace">
-  <aside class="rail">
+  <aside class="rail rail-left">
     <h3>Recent questions</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of recent()">
@@ -22,7 +22,13 @@
         <p>Short topics like <strong>sick leave</strong> will surface matching script questions. Full questions try to return the exact caller wording.</p>
       </div>
 
-      <article class="message message-user" *ngFor="let message of messages()">
+      <article
+        class="message"
+        #messageRow
+        *ngFor="let message of messages()"
+        [class.message-user]="message.role === 'user'"
+        [class.message-assistant]="message.role === 'assistant'"
+      >
         <div class="message-label" *ngIf="message.role === 'user'">You</div>
         <div class="message-label" *ngIf="message.role === 'assistant'">SD Agent IQ</div>
 
@@ -35,12 +41,12 @@
             <span class="thinking-dot"></span>
             <span class="thinking-dot"></span>
             <span class="thinking-dot"></span>
-            <span>Thinking...</span>
+            <span>{{ pendingMessage }}</span>
           </div>
         </div>
 
         <div class="message-bubble assistant-bubble" *ngIf="message.role === 'assistant' && message.response as result">
-          <section class="answer-section" *ngIf="result.scenarioMatches.length > 0">
+          <section class="answer-section answer-section--choices" *ngIf="result.scenarioMatches.length > 0">
             <h3>Matching script questions</h3>
             <p class="section-copy">Choose the closest script question to load the exact caller wording.</p>
             <div class="scenario-chip-list">
@@ -50,26 +56,26 @@
             </div>
           </section>
 
-          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0">
+          <section class="answer-section answer-section--primary" *ngIf="result.scenarioMatches.length === 0">
             <h3>Say this to caller</h3>
             <div class="answer-copy">{{ result.sayThisToCaller }}</div>
           </section>
 
-          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
+          <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
             <h3>Notes</h3>
             <ul>
               <li *ngFor="let note of result.notes">{{ note }}</li>
             </ul>
           </section>
 
-          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
+          <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
             <h3>Steps</h3>
             <ul>
               <li *ngFor="let step of result.steps">{{ step }}</li>
             </ul>
           </section>
 
-          <section class="answer-section" *ngIf="result.scenarioMatches.length === 0">
+          <section class="answer-section answer-section--supporting answer-section--compact" *ngIf="result.scenarioMatches.length === 0">
             <h3>Reference</h3>
             <div class="reference-list" *ngIf="result.referenceScreenshots.length > 0; else noReferences">
               <a
@@ -92,7 +98,7 @@
     </section>
 
     <mat-card class="composer">
-      <div class="composer-row">
+      <div class="composer-shell">
         <textarea
           matInput
           class="composer-input"
@@ -101,14 +107,16 @@
           rows="3"
           placeholder="Ask a service desk question"
         ></textarea>
-        <button mat-flat-button color="primary" type="button" (click)="ask(question())" [disabled]="isThinking()">
-          {{ isThinking() ? "Thinking..." : "Ask" }}
-        </button>
+        <div class="composer-actions">
+          <button mat-flat-button color="primary" type="button" (click)="ask(question())" [disabled]="isThinking()">
+            {{ isThinking() ? "Thinking..." : "Ask" }}
+          </button>
+        </div>
       </div>
     </mat-card>
   </main>
 
-  <aside class="rail">
+  <aside class="rail rail-right">
     <h3>Usually asked</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of common()">
