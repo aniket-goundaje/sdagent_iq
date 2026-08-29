@@ -4,6 +4,7 @@ import type { ParsedPmReference, ParsedScriptEntry } from "../parsing/types.js";
 
 const PM_CHUNK_MAX_CHARS = 6000;
 const PM_CHUNK_OVERLAP_CHARS = 500;
+const PLACEHOLDER_LABELS = new Set(["scenario", "script", "note", "notes"]);
 
 export type RetrievalChunkSourceKind = "scripts" | "pm";
 export type RetrievalChunkKind = "script_entry" | "pm_page" | "pm_page_part";
@@ -43,6 +44,51 @@ function compactLines(lines: string[]) {
     .join("\n");
 }
 
+function normalizeLabel(value: string) {
+  return value.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+function tokenizeText(value: string) {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function isPlaceholderLabel(value: string) {
+  return PLACEHOLDER_LABELS.has(normalizeLabel(value));
+}
+
+function shouldIndexScriptEntry(entry: ParsedScriptEntry) {
+  const scenarioText = entry.scenarioText.trim();
+  const scriptText = entry.scriptText.trim();
+  const notesText = entry.notesText.trim();
+  const populatedFields = [scenarioText, scriptText, notesText].filter(Boolean);
+
+  if (populatedFields.length === 0) {
+    return false;
+  }
+
+  if (populatedFields.every((value) => isPlaceholderLabel(value))) {
+    return false;
+  }
+
+  if (!scriptText && !notesText) {
+    return tokenizeText(scenarioText).length >= 12;
+  }
+
+  if (isPlaceholderLabel(scriptText) && !notesText && tokenizeText(scenarioText).length <= 4) {
+    return false;
+  }
+
+  if (isPlaceholderLabel(notesText) && !scriptText && tokenizeText(scenarioText).length <= 4) {
+    return false;
+  }
+
+  return true;
+}
+
 function splitText(text: string) {
   if (text.length <= PM_CHUNK_MAX_CHARS) {
     return [text];
@@ -68,7 +114,11 @@ function splitText(text: string) {
 }
 
 export function buildScriptRetrievalChunks(documentVersionId: string, entries: ParsedScriptEntry[]) {
-  return entries.map((entry, index) => {
+  return entries.flatMap((entry, index) => {
+    if (!shouldIndexScriptEntry(entry)) {
+      return [];
+    }
+
     const scriptEntryId = buildScriptEntryId(documentVersionId, index);
     const content = compactLines([
       `Section: ${entry.sectionCode} ${entry.sectionTitle}`,
@@ -77,7 +127,7 @@ export function buildScriptRetrievalChunks(documentVersionId: string, entries: P
       `Notes: ${entry.notesText}`
     ]);
 
-    return {
+    return [{
       id: `${scriptEntryId}:chunk:0`,
       documentVersionId,
       sourceKind: "scripts",
@@ -91,7 +141,7 @@ export function buildScriptRetrievalChunks(documentVersionId: string, entries: P
       chunkIndex: 0,
       content,
       contentHash: hashContent(content)
-    } satisfies RetrievalChunkInput;
+    } satisfies RetrievalChunkInput];
   });
 }
 

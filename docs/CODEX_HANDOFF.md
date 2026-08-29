@@ -16,17 +16,19 @@ This repository is currently an npm workspace monorepo:
 - Local document folders under `documents/incoming` and `documents/archive`.
 - Postgres service configured through Docker Compose using the `pgvector/pgvector:pg17` image.
 
-Current implementation is a structured keyword/trigram retrieval system backed by Postgres, with the first vector foundation slice and a standalone semantic retrieval evaluation service added. Semantic/vector retrieval is not yet wired into chat behavior.
+Current implementation is a structured keyword/trigram retrieval system backed by Postgres, with the first vector foundation slice, a standalone semantic retrieval evaluation service, and a simple hybrid retrieval pipeline added. The chat flow can now use hybrid retrieval by default and can fall back to keyword-only retrieval through configuration.
 
 Approved planned architecture is to add embeddings, pgvector-backed semantic retrieval, and hybrid ranking while preserving the existing structured response behavior. Chat LLM generation is explicitly out of scope for the first vector-retrieval slice.
 
-Current project status as of August 16, 2026:
+Current project status as of August 29, 2026:
 
 - Milestone 2 (Vector Foundation) is complete.
 - Milestone 3 has begun in evaluation mode only.
 - 908 embeddings were successfully generated and stored in `retrieval_chunks`.
 - Semantic retrieval has been implemented and validated as a standalone service.
-- The production application still uses keyword/trigram retrieval only.
+- Semantic-index filtering for low-information Script rows has been implemented in chunk generation.
+- Local chunk validation shows Script semantic chunks decreased from 718 to 580, filtering out 138 low-information rows before embedding.
+- The production application now uses hybrid retrieval in chat, with a keyword-only fallback mode available through `CHAT_RETRIEVAL_MODE=keyword`.
 
 ## Current RAG Pipeline
 
@@ -76,6 +78,7 @@ The currently implemented flow is:
    - Empty questions and no-match cases return deterministic fallback messages.
    - Short or ambiguous queries return `scenarioMatches` for user selection.
    - Selected scenario IDs bypass ambiguity and return the selected script entry.
+   - Hybrid retrieval is the default chat path, with keyword-only fallback available through `CHAT_RETRIEVAL_MODE=keyword`.
    - `sayThisToCaller`, `notes`, `steps`, citations, and PM page references are assembled by code.
 
 8. Citations and PM page references:
@@ -128,6 +131,7 @@ Implemented:
 - Deterministic chat response construction with ambiguity handling.
 - PM reference links to source PDF pages.
 - Supervisor page fetching document status.
+- Simple hybrid retrieval in chat, with a configuration fallback to keyword-only retrieval.
 
 Validation actually performed in this session:
 
@@ -137,6 +141,7 @@ Validation actually performed in this session:
 - Local schema creation against Postgres completed successfully.
 - Local schema inspection confirmed the `retrieval_chunks` columns and indexes.
 - Local parse/chunk verification produced 718 Script chunks and 190 PM chunks from the incoming PDFs.
+- On August 29, 2026, local chunk validation after Script filtering produced 580 Script chunks from the same 718 parsed Script entries, filtering out 138 low-information rows before embedding.
 - A synthetic local insert/rollback verified the `retrieval_chunks` vector column and constraints without leaving test rows.
 - Real embeddings were generated and stored: 908 total `retrieval_chunks`, all with `vector_dims(embedding) = 1536`.
 - Standalone semantic retrieval evaluation was run for:
@@ -149,8 +154,18 @@ Validation actually performed in this session:
   - Semantic retrieval clearly outperformed keyword retrieval on paraphrased portal-password queries.
   - Keyword retrieval outperformed semantic retrieval on some exact phrase queries such as `Paid sick leave`.
   - Semantic retrieval for `Direct deposit` and `Paid sick leave` exposed source-data quality issues where fragmented Script rows with weak content can rank too highly.
-  - `Timesheet payment search` produced strong semantic matches for both Script and PM content.
-  - `ESP password` produced relevant semantic matches, but exact keyword retrieval still surfaced the most direct forgot-password Script row first.
+- `Timesheet payment search` produced strong semantic matches for both Script and PM content.
+- `ESP password` produced relevant semantic matches, but exact keyword retrieval still surfaced the most direct forgot-password Script row first.
+- On August 29, 2026, `npm run build:api` and `npm run typecheck` completed successfully after adding Script semantic-index filtering.
+- On August 29, 2026, a local attempt to rerun `npm run ingest:scripts` from Codex was blocked by sandbox permissions before Postgres/embedding regeneration could complete, so semantic evaluation has not yet been rerun with the filtered Script chunk set from this session.
+- On August 29, 2026, improved ingestion logging exposed the actual failure as `AggregateError [EPERM]` from `pg-pool` during `ensureSchema()`, which indicates the process could not open the local Postgres connection in this sandbox.
+- On August 29, 2026, a hybrid retrieval pipeline was integrated into chat with a keyword-only fallback mode controlled by `CHAT_RETRIEVAL_MODE`.
+- On August 29, 2026, `npm run build:api` and `npm run typecheck` completed successfully after the hybrid chat integration.
+- On August 29, 2026, live read-only comparison probes showed:
+  - `What is paid sick leave?` still returns the exact caller script and citations.
+  - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
+  - `Direct deposit` still prompts for scenario selection.
+  - `Where do I send my timesheet?` still returns the exact caller script and citations.
 
 No automated unit/integration test suite was identified or run.
 
@@ -170,6 +185,18 @@ Files changed in the standalone semantic retrieval slice:
 - `apps/api/src/scripts/evaluate-semantic-retrieval.ts` - implemented semantic vs keyword evaluation runner.
 - `apps/api/package.json` - added semantic evaluation script command.
 - `docs/CODEX_HANDOFF.md` - recorded semantic retrieval milestone and evaluation results.
+
+Files changed in the Script semantic-index filtering slice:
+
+- `apps/api/src/chunking/index.ts` - added conservative filtering for placeholder/header rows and low-information scenario-only Script fragments before embedding.
+- `docs/CODEX_HANDOFF.md` - recorded the filtering change, local validation, and remaining rerun work.
+
+Files changed in the hybrid retrieval slice:
+
+- `apps/api/src/chat/chat.service.ts` - switched chat retrieval orchestration to hybrid by default and added a keyword-only fallback mode.
+- `apps/api/src/config/env.ts` - added `CHAT_RETRIEVAL_MODE` to control chat retrieval mode.
+- `apps/api/src/retrieval/hybrid.ts` - implemented the simple hybrid merge and scoring layer for Scripts and PM references.
+- `docs/CODEX_HANDOFF.md` - recorded the hybrid milestone, validation, and fallback mode.
 
 ## Important Existing Behavior - Preserve
 
@@ -374,7 +401,7 @@ Phase 10 - Optional UI updates:
 - Chat LLM generation is intentionally out of scope for the first vector-retrieval slice.
 - `apps/api/src/llm` is still a placeholder module.
 - Some parsed Script source rows appear fragmented or low-information and can produce weak semantic matches.
-- No semantic-index filtering has been applied yet, so parser-generated low-information Script rows are still embedded.
+- Conservative semantic-index filtering is now implemented in chunk generation, but the filtered Script embeddings and standalone semantic evaluation have not yet been regenerated in this session.
 - Upload endpoint returns `501 not_implemented`.
 - Supervisor upload/indexing/version controls are placeholders.
 - Archive behavior is not implemented despite `documents/archive`.
@@ -434,7 +461,7 @@ This handoff file is intentionally uncommitted unless the user later asks to com
 
 ## Next Task
 
-Implement semantic-index filtering for low-information Script rows, regenerate Script embeddings, rerun semantic evaluation, and compare before/after results before beginning hybrid retrieval.
+Proceed with user testing on the hybrid default path. Use `CHAT_RETRIEVAL_MODE=keyword` only if a quick fallback to the previous behavior is needed during testing.
 
 ## Today Summary
 
@@ -447,7 +474,11 @@ Implement semantic-index filtering for low-information Script rows, regenerate S
 - The live application remained unchanged and continues to use keyword/trigram retrieval.
 - Semantic retrieval performed better than keyword retrieval for paraphrased queries such as portal-password variants.
 - Keyword retrieval remained stronger for some exact phrase queries such as `Paid sick leave`.
-- The main retrieval-quality issue is parser-generated fragmented Script rows; the next step is to filter low-information Script rows during chunk generation only, without changing parser output or authoritative `script_entries`.
+- The main retrieval-quality issue is parser-generated fragmented Script rows.
+- On August 29, 2026, low-information Script-row filtering was added in chunk generation only, without changing parser output or authoritative `script_entries`.
+- That filter reduced the Script semantic chunk set from 718 to 580 in local validation, removing 138 low-information rows from future embedding work.
+- The hybrid retrieval path is now the default chat behavior, with keyword-only fallback available through configuration.
+- The remaining risk is tuning hybrid thresholds only if user testing exposes a major issue.
 
 ## Instructions for Future Codex Sessions
 

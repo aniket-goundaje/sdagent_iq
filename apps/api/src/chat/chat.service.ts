@@ -1,6 +1,8 @@
 import type { ChatQueryResponse } from "@sd-agent-iq/shared";
 
-import { findScriptEntryById, searchPmReferences, searchScripts, toCitations, toReferenceLinks, toScenarioMatches } from "../vector-db/script-repository.js";
+import { env } from "../config/env.js";
+import { findScriptEntryById, searchPmReferences, searchScripts, toCitations, toReferenceLinks, toScenarioMatches, type StoredScriptEntry } from "../vector-db/script-repository.js";
+import { searchHybridPmReferences, searchHybridScriptCandidates } from "../retrieval/hybrid.js";
 
 function normalizeQuestion(value: string) {
   return value
@@ -25,6 +27,12 @@ function extractSteps(scriptText: string) {
   return lines.filter((line) => /^(\d+[\).\s]|[-*]|select\b|click\b|enter\b|choose\b|log in\b)/i.test(line));
 }
 
+type ChatScriptMatch = StoredScriptEntry & {
+  score: number;
+  keywordScore: number;
+  semanticSimilarity: number;
+};
+
 export async function buildChatResponse(question: string, selectedScenarioId?: string | null): Promise<ChatQueryResponse> {
   const trimmed = question.trim();
 
@@ -43,7 +51,22 @@ export async function buildChatResponse(question: string, selectedScenarioId?: s
   }
 
   const selected = selectedScenarioId ? await findScriptEntryById(selectedScenarioId) : null;
-  const matches = selected ? [selected] : await searchScripts(trimmed);
+  const useKeywordRetrieval = env.chatRetrievalMode === "keyword";
+  const matches: ChatScriptMatch[] = selected
+    ? [{
+        ...selected,
+        score: Number.POSITIVE_INFINITY,
+        keywordScore: Number.POSITIVE_INFINITY,
+        semanticSimilarity: 1
+      }]
+    : useKeywordRetrieval
+      ? (await searchScripts(trimmed)).map((candidate) => ({
+          ...candidate,
+          score: candidate.score ?? 0,
+          keywordScore: candidate.score ?? 0,
+          semanticSimilarity: 0
+        }))
+      : await searchHybridScriptCandidates(trimmed);
 
   if (matches.length === 0) {
     return {
@@ -63,16 +86,20 @@ export async function buildChatResponse(question: string, selectedScenarioId?: s
   const secondMatch = matches[1] ?? null;
   const topScore = topMatch.score ?? 0;
   const secondScore = secondMatch?.score ?? 0;
+  const keywordScore = topMatch.keywordScore ?? 0;
   const normalizedQuestion = normalizeQuestion(trimmed);
   const normalizedTopScenario = normalizeQuestion(topMatch.scenarioText);
   const hasExactScenarioMatch = normalizedTopScenario === normalizedQuestion;
   const isShortKeywordSearch = trimmed.split(/\s+/).length <= 4;
-  const isAmbiguous = topScore < 45 || (secondMatch !== null && topScore - secondScore <= 8);
-  const shouldPromptForChoice = !selectedScenarioId && !hasExactScenarioMatch && (isShortKeywordSearch || isAmbiguous);
+  const isKeywordDriven = useKeywordRetrieval || keywordScore >= 20;
+  const isAmbiguous = isKeywordDriven && (topScore < 45 || (secondMatch !== null && topScore - secondScore <= 8));
+  const shouldPromptForChoice = !selectedScenarioId && !hasExactScenarioMatch && ((isShortKeywordSearch && isKeywordDriven) || isAmbiguous);
   const scenarioMatches = shouldPromptForChoice ? toScenarioMatches(matches) : [];
   const pmReferences = shouldPromptForChoice
     ? []
-    : await searchPmReferences(trimmed, `${topMatch.sectionTitle}\n${topMatch.scenarioText}\n${topMatch.scriptText}`);
+    : useKeywordRetrieval
+      ? await searchPmReferences(trimmed, `${topMatch.sectionTitle}\n${topMatch.scenarioText}\n${topMatch.scriptText}`)
+      : await searchHybridPmReferences(trimmed, `${topMatch.sectionTitle}\n${topMatch.scenarioText}\n${topMatch.scriptText}`);
 
   return {
     question: trimmed,

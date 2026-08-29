@@ -38,6 +38,7 @@ export const env = {
   openAiApiKey: requireEnv("OPENAI_API_KEY", "placeholder-key"),
   openAiChatModel: requireEnv("OPENAI_CHAT_MODEL", "gpt-5.5"),
   openAiEmbeddingModel: requireEnv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
+  chatRetrievalMode: (process.env.CHAT_RETRIEVAL_MODE ?? "hybrid") as "hybrid" | "keyword",
   jwtSecret: requireEnv("JWT_SECRET", "replace_me"),
   documentsIncomingPath: process.env.DOCUMENTS_INCOMING_PATH ?? path.resolve(repoRoot, "documents/incoming"),
   documentsArchivePath: process.env.DOCUMENTS_ARCHIVE_PATH ?? path.resolve(repoRoot, "documents/archive"),
