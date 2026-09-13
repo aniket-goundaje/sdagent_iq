@@ -43,6 +43,7 @@ Current project status as of August 29, 2026:
 - Supervisor Workspace now reuses the complete Agent Workspace experience and adds supervisor-only system status, active document, document-count, and staged document-management panels.
 - The visual hierarchy refresh adds semantic section surfaces: teal for `Say this to caller`, warm yellow for Notes, blue for References, lavender for Feedback, stronger composer emphasis, and subtly distinct Recent/Usually Asked side rails.
 - The enterprise design-system refresh deepens the neutral page/surface hierarchy, replaces textual supervisor status values with colored badges, and restyles staged document-management controls as enterprise primary/secondary actions while leaving workflows unchanged.
+- The enterprise design-system refresh was refined to move further away from the white-card prototype look: page, workspace, rails, answer cards, composer, status chips, and document-management actions now use layered neutral surfaces, semantic tints, and elevation instead of colored borders.
 
 ## Current RAG Pipeline
 
@@ -193,6 +194,7 @@ Validation actually performed in this session:
 - On September 13, 2026, the Supervisor Workspace placeholder was removed from routing and replaced with the Agent Workspace plus supervisor-only admin panels. Validation confirmed `/supervisor` preserves ask/recent/usually-asked/answer/notes/reference/feedback behavior, shows retrieval mode, embedding model, index status, active Scripts/PM versions, entry/reference counts, retrieval chunk counts, staged upload/reindex controls, and logout navigation back to login.
 - On September 13, 2026, the visual hierarchy refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor workspace still returns answers with Notes, References, and Feedback visible.
 - On September 13, 2026, the enterprise design-system refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor shell shows status badges/document actions and the chat answer still renders correctly.
+- On September 13, 2026, the enterprise design-system refinement was applied without workflow or backend changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed status chips, staged document actions, semantic answer surfaces, checklist Notes, PM References, Feedback, and the primary composer still render correctly.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -301,6 +303,11 @@ Files changed in enterprise design-system refresh:
 - `apps/web/src/app/features/agent/agent-workspace.component.ts` - adds a display label helper for index status.
 - `apps/web/src/app/features/agent/agent-workspace.component.scss` - deepens neutral surfaces, card elevation, composer focus treatment, Ask button contrast, status badges, and document-management button styling.
 - `docs/CODEX_HANDOFF.md` - recorded the enterprise design-system refresh and validation notes.
+
+Files changed in enterprise design-system refinement:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - further separates page/workspace/rail/card surfaces, reduces reliance on colored borders, maps Hybrid/Embedding/Indexed badges to semantic chip colors, and makes staged document-management actions read as enterprise cards.
+- `docs/CODEX_HANDOFF.md` - recorded the refinement and validation notes.
 
 ## Important Existing Behavior - Preserve
 
