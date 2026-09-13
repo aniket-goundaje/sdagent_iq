@@ -2,6 +2,18 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import type { ChatQueryRequest, ChatQueryResponse, CommonQuestionsResponse, DocumentStatusResponse, LoginRequest, LoginResponse, RecentQuestionsResponse } from "@sd-agent-iq/shared";
 
+export interface HealthResponse {
+  status: string;
+  service: string;
+  environment: {
+    apiPort: number;
+    databaseConfigured: boolean;
+    openAiConfigured: boolean;
+    chatModel: string;
+    embeddingModel: string;
+  };
+}
+
 @Injectable({ providedIn: "root" })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -25,5 +37,9 @@ export class ApiService {
 
   getDocumentStatus() {
     return this.http.get<DocumentStatusResponse>(`${this.baseUrl}/admin/documents/status`);
+  }
+
+  getHealth() {
+    return this.http.get<HealthResponse>(`${this.baseUrl}/health`);
   }
 }

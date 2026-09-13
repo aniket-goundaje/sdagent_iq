@@ -7,6 +7,9 @@ import pdfplumber
 
 
 SECTION_RE = re.compile(r"^\s*(1\.\d+(?:\.\d+)*)\s+(.+?)\s*$")
+BULLET_RE = re.compile(r"^\s*(?:[-*\u2022]|\d+[\.)])\s+")
+NOTE_BOUNDARY_RE = re.compile(r"^\s*(?:note:|[-*\u2022]|\d+[\.)]\s+|step\b)", re.IGNORECASE)
+SENTENCE_END_RE = re.compile(r"[.!?;)](?:[\"'])?$")
 
 
 def parse_date_from_filename(file_name: str) -> str:
@@ -22,6 +25,26 @@ def normalize_cell(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"\n{2,}", "\n", value).strip()
+
+
+def normalize_notes_text(value: str) -> str:
+    lines = [line.strip() for line in value.splitlines()]
+    notes: list[str] = []
+
+    for line in lines:
+        if not line:
+            if notes and notes[-1]:
+                notes.append("")
+            continue
+
+        is_boundary = bool(NOTE_BOUNDARY_RE.match(line))
+        if not notes or not notes[-1] or is_boundary or SENTENCE_END_RE.search(notes[-1]):
+            notes.append(line)
+            continue
+
+        notes[-1] = f"{notes[-1]} {line}"
+
+    return "\n".join(notes).strip()
 
 
 def extract_section(page) -> tuple[str, str] | None:
@@ -98,6 +121,9 @@ def parse_scripts_pdf(file_path: str) -> dict:
                     append_continuation(current_entry, cells, page_index)
 
     file_name = os.path.basename(file_path)
+    for entry in entries:
+        entry["notesText"] = normalize_notes_text(entry["notesText"])
+
     return {
         "fileName": file_name,
         "documentDate": parse_date_from_filename(file_name),

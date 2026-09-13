@@ -1,4 +1,22 @@
-<div class="workspace">
+<header class="app-header">
+  <div class="app-brand">
+    <span class="brand-mark">SD</span>
+    <div>
+      <h1>SD Agent IQ</h1>
+      <p>{{ isSupervisorWorkspace() ? "Supervisor workspace" : "Agent workspace" }}</p>
+    </div>
+  </div>
+
+  <div class="user-summary">
+    <div>
+      <strong>{{ displayName() }}</strong>
+      <span>{{ displayRole() }}</span>
+    </div>
+    <button mat-stroked-button type="button" (click)="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="workspace" [class.workspace-supervisor]="isSupervisorWorkspace()">
   <aside class="rail rail-left">
     <h3>Recent questions</h3>
     <mat-list>
@@ -61,21 +79,21 @@
             <div class="answer-copy">{{ result.sayThisToCaller }}</div>
           </section>
 
-          <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
+          <section class="answer-section answer-section--supporting answer-section--notes" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
             <h3>Notes</h3>
-            <div class="answer-note-list">
-              <p class="answer-note-item" *ngFor="let note of result.notes">{{ note }}</p>
-            </div>
+            <ul class="answer-note-list">
+              <li class="answer-note-item" *ngFor="let note of result.notes">{{ formatNoteForDisplay(note) }}</li>
+            </ul>
           </section>
 
-          <section class="answer-section answer-section--supporting" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
+          <section class="answer-section answer-section--supporting answer-section--steps" *ngIf="result.scenarioMatches.length === 0 && result.steps.length > 0">
             <h3>Steps</h3>
             <ul>
               <li *ngFor="let step of result.steps">{{ step }}</li>
             </ul>
           </section>
 
-          <section class="answer-section answer-section--supporting answer-section--compact" *ngIf="result.scenarioMatches.length === 0">
+          <section class="answer-section answer-section--supporting answer-section--references answer-section--compact" *ngIf="result.scenarioMatches.length === 0">
             <h3>Reference</h3>
             <div class="reference-list" *ngIf="result.referenceScreenshots.length > 0; else noReferences">
               <a
@@ -166,5 +184,89 @@
         <button mat-button type="button" [disabled]="isThinking()" (click)="ask(item)">{{ item }}</button>
       </mat-list-item>
     </mat-list>
+
+    <ng-container *ngIf="isSupervisorWorkspace()">
+      <section class="admin-panel">
+        <h3>System Status</h3>
+        <dl class="status-grid">
+          <div>
+            <dt>Retrieval Mode</dt>
+            <dd><span class="status-badge status-badge--hybrid">Hybrid</span></dd>
+          </div>
+          <div>
+            <dt>Embedding Model</dt>
+            <dd><span class="status-badge status-badge--embeddings">{{ embeddingModel() }}</span></dd>
+          </div>
+          <div>
+            <dt>Index Status</dt>
+            <dd><span class="status-badge status-badge--indexed">{{ indexStatusLabel() }}</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="admin-panel">
+        <h3>Current Active Documents</h3>
+
+        <article class="document-card">
+          <div>
+            <h4>Scripts</h4>
+            <p>{{ activeDocument("scripts")?.fileName ?? "No active Scripts document" }}</p>
+          </div>
+          <dl class="document-meta">
+            <div>
+              <dt>Version</dt>
+              <dd>{{ activeDocument("scripts")?.id ?? "Not indexed" }}</dd>
+            </div>
+            <div>
+              <dt>Indexed Date</dt>
+              <dd>{{ formatDate(activeDocument("scripts")?.indexedAt) }}</dd>
+            </div>
+            <div>
+              <dt>Script Entry Count</dt>
+              <dd>{{ documentStatus()?.documentStats?.scripts?.scriptEntryCount ?? "Not available" }}</dd>
+            </div>
+            <div>
+              <dt>Retrieval Chunk Count</dt>
+              <dd>{{ documentStatus()?.documentStats?.scripts?.retrievalChunkCount ?? "Not available" }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="document-card">
+          <div>
+            <h4>Procedures Manual</h4>
+            <p>{{ activeDocument("pm")?.fileName ?? "No active PM document" }}</p>
+          </div>
+          <dl class="document-meta">
+            <div>
+              <dt>Version</dt>
+              <dd>{{ activeDocument("pm")?.id ?? "Not indexed" }}</dd>
+            </div>
+            <div>
+              <dt>Indexed Date</dt>
+              <dd>{{ formatDate(activeDocument("pm")?.indexedAt) }}</dd>
+            </div>
+            <div>
+              <dt>Reference Count</dt>
+              <dd>{{ documentStatus()?.documentStats?.pm?.referenceCount ?? "Not available" }}</dd>
+            </div>
+            <div>
+              <dt>Retrieval Chunk Count</dt>
+              <dd>{{ documentStatus()?.documentStats?.pm?.retrievalChunkCount ?? "Not available" }}</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="admin-panel">
+        <h3>Document Management</h3>
+        <div class="admin-actions">
+          <button class="admin-action admin-action--secondary" type="button" disabled>Upload Scripts PDF</button>
+          <button class="admin-action admin-action--secondary" type="button" disabled>Upload PM PDF</button>
+          <button class="admin-action admin-action--primary" type="button" disabled>Reindex Documents</button>
+        </div>
+        <p class="admin-hint">Upload and reindex controls are staged for the next implementation slice.</p>
+      </section>
+    </ng-container>
   </aside>
 </div>

@@ -1,15 +1,17 @@
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, NgZone, QueryList, ViewChild, ViewChildren, inject, signal } from "@angular/core";
+import { Component, ElementRef, NgZone, QueryList, ViewChild, ViewChildren, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { Router } from "@angular/router";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
 import { take } from "rxjs";
 
-import type { ChatQueryResponse, CommonQuestionsResponse, ParsedScriptScenarioMatch, RecentQuestionsResponse } from "@sd-agent-iq/shared";
+import type { ChatQueryResponse, CommonQuestionsResponse, DocumentStatusResponse, ParsedScriptScenarioMatch, RecentQuestionsResponse } from "@sd-agent-iq/shared";
 
-import { ApiService } from "../../core/api.service";
+import { ApiService, type HealthResponse } from "../../core/api.service";
+import { SessionService } from "../../core/session.service";
 
 type FeedbackChoice = "helpful" | "not_helpful";
 
@@ -48,9 +50,12 @@ interface StoredFeedbackRecord {
 })
 export class AgentWorkspaceComponent {
   private static readonly feedbackStorageKey = "sd-agent-feedback-v1";
+  private static readonly recentQuestionLimit = 8;
 
   private readonly api = inject(ApiService);
   private readonly zone = inject(NgZone);
+  private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
 
   @ViewChild("composerInput") private composerInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChildren("messageRow") private messageRows?: QueryList<ElementRef<HTMLElement>>;
@@ -60,10 +65,16 @@ export class AgentWorkspaceComponent {
   readonly recent = signal<RecentQuestionsResponse["items"]>([]);
   readonly common = signal<CommonQuestionsResponse["items"]>([]);
   readonly messages = signal<ChatMessage[]>([]);
+  readonly documentStatus = signal<DocumentStatusResponse | null>(null);
+  readonly health = signal<HealthResponse | null>(null);
+  readonly currentUser = this.session.currentUser;
+  readonly isSupervisorWorkspace = computed(() => this.router.url.startsWith("/supervisor") || this.currentUser()?.role === "supervisor");
 
   constructor() {
     this.api.getRecentQuestions().subscribe((payload) => this.recent.set(payload.items));
     this.api.getCommonQuestions().subscribe((payload) => this.common.set(payload.items));
+    this.api.getDocumentStatus().subscribe((payload) => this.documentStatus.set(payload));
+    this.api.getHealth().subscribe((payload) => this.health.set(payload));
   }
 
   onComposerKeydown(event: KeyboardEvent) {
@@ -89,6 +100,7 @@ export class AgentWorkspaceComponent {
     const stamp = Date.now();
     this.question.set("");
     this.isThinking.set(true);
+    this.addRecentQuestion(trimmed, stamp);
 
     this.messages.update((messages) => [
       ...messages,
@@ -190,6 +202,57 @@ export class AgentWorkspaceComponent {
     return message.feedback?.choice === "not_helpful";
   }
 
+  formatNoteForDisplay(note: string) {
+    return note.replace(/^note:\s*/i, "");
+  }
+
+  displayName() {
+    return this.currentUser()?.displayName ?? "Demo User";
+  }
+
+  displayRole() {
+    return this.isSupervisorWorkspace() ? "Supervisor" : "Agent";
+  }
+
+  activeDocument(kind: "scripts" | "pm") {
+    const status = this.documentStatus();
+    return status?.activeVersions?.[kind] ?? (status?.activeVersion?.kind === kind ? status.activeVersion : null);
+  }
+
+  formatDate(value?: string | null) {
+    if (!value) {
+      return "Not indexed";
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }).format(new Date(value));
+  }
+
+  retrievalMode() {
+    return "Hybrid";
+  }
+
+  embeddingModel() {
+    return this.health()?.environment.embeddingModel ?? "Not available";
+  }
+
+  indexStatus() {
+    return this.documentStatus()?.ingestionState ?? "not_started";
+  }
+
+  indexStatusLabel() {
+    const status = this.indexStatus();
+    return status === "completed" ? "Indexed" : status.replace(/_/g, " ");
+  }
+
+  logout() {
+    this.session.clear();
+    void this.router.navigateByUrl("/");
+  }
+
   chooseFeedback(messageId: string, choice: FeedbackChoice) {
     this.updateFeedback(messageId, (current) => ({
       ...current,
@@ -229,6 +292,15 @@ export class AgentWorkspaceComponent {
   private focusComposer() {
     this.zone.onStable.pipe(take(1)).subscribe(() => {
       this.composerInput?.nativeElement.focus();
+    });
+  }
+
+  private addRecentQuestion(question: string, stamp: number) {
+    this.recent.update((items) => {
+      const normalized = question.toLowerCase();
+      const existing = items.filter((item) => item.question.toLowerCase() !== normalized);
+
+      return [{ id: `local-${stamp}`, question, askedAt: new Date(stamp).toISOString() }, ...existing].slice(0, AgentWorkspaceComponent.recentQuestionLimit);
     });
   }
 

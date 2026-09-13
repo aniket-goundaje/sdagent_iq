@@ -51,6 +51,7 @@ function mapDocumentVersion(row: Record<string, string>): DocumentVersion {
     fileName: row.file_name,
     documentDate: new Date(row.document_date).toISOString(),
     uploadedAt: row.uploaded_at,
+    indexedAt: row.indexed_at ?? null,
     status: row.status as "pending" | "indexed" | "failed"
   };
 }
@@ -251,20 +252,42 @@ export async function replaceRetrievalChunks(documentVersionId: string, chunks: 
 
 export async function getActiveDocumentStatus(discoveredVersions: DocumentVersion[]): Promise<DocumentStatusResponse> {
   await ensureSchema();
-  const { rows } = await pool.query(
+  const { rows: versionRows } = await pool.query(
     `
       SELECT *
       FROM document_versions
-      WHERE kind = 'scripts' AND status = 'indexed'
+      WHERE status = 'indexed'
       ORDER BY document_date DESC, indexed_at DESC NULLS LAST
-      LIMIT 1
     `
   );
+  const [{ rows: scriptEntryRows }, { rows: pmReferenceRows }, { rows: scriptChunkRows }, { rows: pmChunkRows }] = await Promise.all([
+    pool.query(`SELECT COUNT(*) AS count FROM script_entries`),
+    pool.query(`SELECT COUNT(*) AS count FROM pm_references`),
+    pool.query(`SELECT COUNT(*) AS count FROM retrieval_chunks WHERE source_kind = 'scripts'`),
+    pool.query(`SELECT COUNT(*) AS count FROM retrieval_chunks WHERE source_kind = 'pm'`)
+  ]);
+  const versions = versionRows.map((row) => mapDocumentVersion(row));
+  const scriptsVersion = versions.find((version) => version.kind === "scripts") ?? null;
+  const pmVersion = versions.find((version) => version.kind === "pm") ?? null;
 
   return {
-    activeVersion: rows[0] ? mapDocumentVersion(rows[0]) : null,
+    activeVersion: scriptsVersion,
+    activeVersions: {
+      scripts: scriptsVersion,
+      pm: pmVersion
+    },
+    documentStats: {
+      scripts: {
+        scriptEntryCount: Number(scriptEntryRows[0]?.count ?? 0),
+        retrievalChunkCount: Number(scriptChunkRows[0]?.count ?? 0)
+      },
+      pm: {
+        referenceCount: Number(pmReferenceRows[0]?.count ?? 0),
+        retrievalChunkCount: Number(pmChunkRows[0]?.count ?? 0)
+      }
+    },
     latestDiscoveredVersions: discoveredVersions,
-    ingestionState: rows[0] ? "completed" : "not_started"
+    ingestionState: scriptsVersion || pmVersion ? "completed" : "not_started"
   };
 }
 

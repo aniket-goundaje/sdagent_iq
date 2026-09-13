@@ -18,6 +18,7 @@ export function registerAdminRoutes(app: Express) {
         fileName: file.fileName,
         documentDate: file.documentDate,
         uploadedAt: new Date().toISOString(),
+        indexedAt: null,
         status: "pending"
       }));
 

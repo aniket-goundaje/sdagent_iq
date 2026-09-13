@@ -36,6 +36,13 @@ Current project status as of August 29, 2026:
 - UI Sprint 5 gives the composer the strongest visual emphasis on the page, renders Notes as comfortable wrapped reading content, and further reduces the flat white-card feel without changing workflows.
 - UI Sprint 6 finalizes the visual polish: Notes now render as readable bullet items, the composer feels more prominent, the Ask button stands out as the primary action, and the page surfaces are even softer and cleaner.
 - UI Sprint 6 also corrected the remaining Notes wrapping issue by removing the narrow list gutter so the notes can use the full content width like the main answer.
+- Scripts parser notes normalization now merges PDF visual line wraps into logical note lines before rows enter `script_entries`.
+- Scripts parser notes normalization now treats `Note:`, bullet markers, numbered items, and `Step` starts as logical note boundaries so independent notes are not merged together.
+- Agent Workspace now presents Notes as compact checklist-style bullets and strips the source `Note:` prefix only at render time.
+- UI Sprint 7 improved Agent Workspace hierarchy with local recent-question updates, stronger composer/Ask emphasis, and subtler surface depth without changing backend behavior.
+- Supervisor Workspace now reuses the complete Agent Workspace experience and adds supervisor-only system status, active document, document-count, and staged document-management panels.
+- The visual hierarchy refresh adds semantic section surfaces: teal for `Say this to caller`, warm yellow for Notes, blue for References, lavender for Feedback, stronger composer emphasis, and subtly distinct Recent/Usually Asked side rails.
+- The enterprise design-system refresh deepens the neutral page/surface hierarchy, replaces textual supervisor status values with colored badges, and restyles staged document-management controls as enterprise primary/secondary actions while leaving workflows unchanged.
 
 ## Current RAG Pipeline
 
@@ -179,6 +186,13 @@ Validation actually performed in this session:
 - On August 29, 2026, the agent workspace UI Sprint 5 strengthened the composer CTA, improved Notes readability, and refined the hierarchy without adding new colors or layout changes.
 - On August 29, 2026, the agent workspace UI Sprint 6 finalized the visual polish by improving Notes wrapping, composer emphasis, and primary-action prominence.
 - On August 29, 2026, the agent workspace UI Sprint 6 also removed the narrow Notes gutter so the notes read as full-width content rather than a compressed column.
+- On August 31, 2026, Scripts ingestion was rerun after parser-level Notes normalization; the `Where do I send my timesheet?` response now returns four logical notes instead of eight visual PDF fragments.
+- On September 1, 2026, the Notes normalization was refined to distinguish PDF visual wrapping from logical note boundaries. Parser-level validation confirmed `Note:`, bullets, numbered items, `Step`, and blank-line paragraph breaks are preserved while wrapped continuation lines are still joined.
+- On September 1, 2026, Agent Workspace Notes presentation was updated to render API notes as compact checklist bullets, removing only a leading `Note:` prefix for display while preserving the API contract and retrieval behavior.
+- On September 1, 2026, UI Sprint 7 validation confirmed a newly submitted question is added locally to Recent Questions at the top of the list, deduped, and capped, while `npm run typecheck` still passes.
+- On September 13, 2026, the Supervisor Workspace placeholder was removed from routing and replaced with the Agent Workspace plus supervisor-only admin panels. Validation confirmed `/supervisor` preserves ask/recent/usually-asked/answer/notes/reference/feedback behavior, shows retrieval mode, embedding model, index status, active Scripts/PM versions, entry/reference counts, retrieval chunk counts, staged upload/reindex controls, and logout navigation back to login.
+- On September 13, 2026, the visual hierarchy refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor workspace still returns answers with Notes, References, and Feedback visible.
+- On September 13, 2026, the enterprise design-system refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor shell shows status badges/document actions and the chat answer still renders correctly.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -241,6 +255,52 @@ Files changed in UI Sprint 6:
 - `apps/web/src/app/features/agent/agent-workspace.component.html` - rendered Notes as readable bullet items and added a small composer icon cue.
 - `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthened the composer emphasis, improved Notes wrapping and spacing, and reduced the flat white-card feel.
 - `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 6 milestone and validation notes.
+
+Files changed in parser Notes normalization:
+
+- `apps/api/src/parsing/scripts_pdf_parser.py` - added/refined parser-level Notes normalization that merges wrapped PDF lines while preserving `Note:`, bullet/list starts, numbered items, `Step` starts, and paragraph breaks as logical boundaries.
+- `docs/CODEX_HANDOFF.md` - recorded the parser normalization milestone and validation notes.
+
+Files changed in Notes presentation polish:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - renders Notes as a semantic compact bullet list.
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - strips only a leading `Note:` prefix at display time.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - styles Notes bullets for compact checklist readability.
+- `docs/CODEX_HANDOFF.md` - recorded the UI-only Notes presentation milestone.
+
+Files changed in UI Sprint 7:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - adds newly asked questions to the local Recent Questions rail, most recent first, with dedupe and an eight-item cap.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthens composer and Ask button emphasis, softens page/card surfaces, and adds clearer visual depth across answer sections.
+- `docs/CODEX_HANDOFF.md` - recorded the UI Sprint 7 milestone and validation notes.
+
+Files changed in Supervisor Workspace redesign:
+
+- `apps/web/src/app/app.routes.ts` - routes `/supervisor` to the shared Agent Workspace.
+- `apps/web/src/app/core/session.service.ts` - stores the current demo user for header display and logout.
+- `apps/web/src/app/core/api.service.ts` - adds a typed health call for supervisor system metadata.
+- `apps/web/src/app/features/auth/login-page.component.ts` - saves the login response in the frontend session store.
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - adds the application header and supervisor-only admin sections while preserving the agent chat flow.
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - adds role-aware display helpers, logout, health/status loading, and supervisor document helpers.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - styles the application header and supervisor admin panels to match the agent workspace.
+- `apps/web/src/app/features/supervisor/*` - removed the old placeholder supervisor component files.
+- `packages/shared/src/documents/document.types.ts` - extends document status metadata with optional active versions, indexed date, and counts.
+- `apps/api/src/vector-db/script-repository.ts` - includes read-only supervisor document stats in the existing status endpoint.
+- `apps/api/src/documents/admin.routes.ts` - includes `indexedAt: null` for discovered, not-yet-indexed documents.
+- `docs/CODEX_HANDOFF.md` - recorded the Supervisor Workspace redesign milestone and validation notes.
+
+Files changed in visual hierarchy refresh:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - adds semantic modifier classes for Notes, Steps, and References sections.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - applies semantic section surfaces, side-rail tinting, stronger composer focus/elevation, and higher-contrast Ask button states.
+- `docs/CODEX_HANDOFF.md` - recorded the visual hierarchy refresh and validation notes.
+
+Files changed in enterprise design-system refresh:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - renders supervisor system values as status badges and assigns primary/secondary styles to staged document actions.
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - adds a display label helper for index status.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - deepens neutral surfaces, card elevation, composer focus treatment, Ask button contrast, status badges, and document-management button styling.
+- `docs/CODEX_HANDOFF.md` - recorded the enterprise design-system refresh and validation notes.
 
 ## Important Existing Behavior - Preserve
 

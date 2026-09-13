@@ -9,6 +9,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 
 import { ApiService } from "../../core/api.service";
+import { SessionService } from "../../core/session.service";
 
 @Component({
   selector: "sd-login-page",
@@ -29,6 +30,7 @@ export class LoginPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
 
   readonly errorMessage = signal("");
   readonly isSubmitting = signal(false);
@@ -64,6 +66,7 @@ export class LoginPageComponent {
     this.api.login(this.loginForm.getRawValue()).subscribe({
       next: (response) => {
         this.isSubmitting.set(false);
+        this.session.saveLogin(response);
         const destination = response.user.role === "supervisor" ? "/supervisor" : "/agent";
         void this.router.navigateByUrl(destination);
       },
