@@ -164,13 +164,22 @@
             [ngModel]="question()"
             (ngModelChange)="question.set($event)"
             rows="2"
-            placeholder="Ask a service desk question"
+            placeholder="Ask naturally, for example: How do I reset an ESP password?"
             (keydown)="onComposerKeydown($event)"
           ></textarea>
         </div>
         <div class="composer-actions">
-          <button mat-flat-button color="primary" type="button" class="composer-submit" (click)="submitQuestion()" [disabled]="!canSubmit()">
-            {{ isThinking() ? "Searching..." : "Ask" }}
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="composer-submit"
+            [class.is-loading]="isThinking()"
+            (click)="submitQuestion()"
+            [disabled]="!canSubmit()"
+          >
+            <span class="composer-submit-label">{{ isThinking() ? "Searching" : "Ask" }}</span>
+            <span class="composer-submit-icon" aria-hidden="true"></span>
           </button>
         </div>
       </div>
@@ -187,72 +196,44 @@
 
     <ng-container *ngIf="isSupervisorWorkspace()">
       <section class="admin-panel">
-        <h3>System Status</h3>
-        <dl class="status-grid">
-          <div>
-            <dt>Retrieval Mode</dt>
-            <dd><span class="status-badge status-badge--hybrid">Hybrid</span></dd>
-          </div>
-          <div>
-            <dt>Embedding Model</dt>
-            <dd><span class="status-badge status-badge--embeddings">{{ embeddingModel() }}</span></dd>
-          </div>
-          <div>
-            <dt>Index Status</dt>
-            <dd><span class="status-badge status-badge--indexed">{{ indexStatusLabel() }}</span></dd>
-          </div>
-        </dl>
-      </section>
-
-      <section class="admin-panel">
         <h3>Current Active Documents</h3>
 
         <article class="document-card">
           <div>
-            <h4>Scripts</h4>
-            <p>{{ activeDocument("scripts")?.fileName ?? "No active Scripts document" }}</p>
+            <h4><span aria-hidden="true">📄</span> Scripts</h4>
           </div>
           <dl class="document-meta">
             <div>
-              <dt>Version</dt>
-              <dd>{{ activeDocument("scripts")?.id ?? "Not indexed" }}</dd>
+              <dt>Current Version</dt>
+              <dd>{{ activeDocument("scripts")?.fileName ?? "No active Scripts document" }}</dd>
             </div>
             <div>
               <dt>Indexed Date</dt>
               <dd>{{ formatDate(activeDocument("scripts")?.indexedAt) }}</dd>
             </div>
             <div>
-              <dt>Script Entry Count</dt>
-              <dd>{{ documentStatus()?.documentStats?.scripts?.scriptEntryCount ?? "Not available" }}</dd>
-            </div>
-            <div>
-              <dt>Retrieval Chunk Count</dt>
-              <dd>{{ documentStatus()?.documentStats?.scripts?.retrievalChunkCount ?? "Not available" }}</dd>
+              <dt>Status</dt>
+              <dd><span class="status-badge status-badge--indexed">{{ activeDocument("scripts") ? "Indexed" : "Not indexed" }}</span></dd>
             </div>
           </dl>
         </article>
 
         <article class="document-card">
           <div>
-            <h4>Procedures Manual</h4>
-            <p>{{ activeDocument("pm")?.fileName ?? "No active PM document" }}</p>
+            <h4><span aria-hidden="true">📘</span> Procedures Manual</h4>
           </div>
           <dl class="document-meta">
             <div>
-              <dt>Version</dt>
-              <dd>{{ activeDocument("pm")?.id ?? "Not indexed" }}</dd>
+              <dt>Current Version</dt>
+              <dd>{{ activeDocument("pm")?.fileName ?? "No active PM document" }}</dd>
             </div>
             <div>
               <dt>Indexed Date</dt>
               <dd>{{ formatDate(activeDocument("pm")?.indexedAt) }}</dd>
             </div>
             <div>
-              <dt>Reference Count</dt>
-              <dd>{{ documentStatus()?.documentStats?.pm?.referenceCount ?? "Not available" }}</dd>
-            </div>
-            <div>
-              <dt>Retrieval Chunk Count</dt>
-              <dd>{{ documentStatus()?.documentStats?.pm?.retrievalChunkCount ?? "Not available" }}</dd>
+              <dt>Status</dt>
+              <dd><span class="status-badge status-badge--indexed">{{ activeDocument("pm") ? "Indexed" : "Not indexed" }}</span></dd>
             </div>
           </dl>
         </article>
@@ -262,15 +243,15 @@
         <h3>Document Management</h3>
         <div class="admin-actions">
           <button class="admin-action admin-action--secondary" type="button" disabled>
-            <strong>Upload Scripts PDF</strong>
+            <strong><span aria-hidden="true">☁</span> Upload Scripts PDF</strong>
             <span>Stage an updated caller-script source document.</span>
           </button>
           <button class="admin-action admin-action--secondary" type="button" disabled>
-            <strong>Upload PM PDF</strong>
+            <strong><span aria-hidden="true">☁</span> Upload PM PDF</strong>
             <span>Stage an updated Procedures Manual source document.</span>
           </button>
           <button class="admin-action admin-action--primary" type="button" disabled>
-            <strong>Reindex Documents</strong>
+            <strong><span aria-hidden="true">↻</span> Reindex Documents</strong>
             <span>Refresh scripts, references, and retrieval chunks.</span>
           </button>
         </div>

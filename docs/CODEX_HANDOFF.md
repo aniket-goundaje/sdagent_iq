@@ -44,6 +44,10 @@ Current project status as of August 29, 2026:
 - The visual hierarchy refresh adds semantic section surfaces: teal for `Say this to caller`, warm yellow for Notes, blue for References, lavender for Feedback, stronger composer emphasis, and subtly distinct Recent/Usually Asked side rails.
 - The enterprise design-system refresh deepens the neutral page/surface hierarchy, replaces textual supervisor status values with colored badges, and restyles staged document-management controls as enterprise primary/secondary actions while leaving workflows unchanged.
 - The enterprise design-system refresh was refined to move further away from the white-card prototype look: page, workspace, rails, answer cards, composer, status chips, and document-management actions now use layered neutral surfaces, semantic tints, and elevation instead of colored borders.
+- The final enterprise polish pass makes the center workspace more visually dominant, softens supporting side rails, gives matching script questions a stronger selectable-result treatment, and improves vertical rhythm between answer sections without changing workflows.
+- The final composer polish makes the chat composer the strongest interaction point with a richer command-center surface, stronger focus glow, natural-language example placeholder, and a higher-contrast purple-to-magenta Ask action with hover, pressed, and loading states.
+- The composer brightness follow-up increases the default composer contrast so the input shell and disabled Ask action remain visually discoverable before the agent starts typing.
+- The final product design pass reduces decorative color, shifts the app to a warmer neutral surface system, keeps semantic color for approved answers/references/primary actions, and simplifies the supervisor sidebar into business-facing document status.
 
 ## Current RAG Pipeline
 
@@ -195,6 +199,10 @@ Validation actually performed in this session:
 - On September 13, 2026, the visual hierarchy refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor workspace still returns answers with Notes, References, and Feedback visible.
 - On September 13, 2026, the enterprise design-system refresh was applied without layout or functionality changes. `npm run typecheck` passed and browser validation confirmed the supervisor shell shows status badges/document actions and the chat answer still renders correctly.
 - On September 13, 2026, the enterprise design-system refinement was applied without workflow or backend changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed status chips, staged document actions, semantic answer surfaces, checklist Notes, PM References, Feedback, and the primary composer still render correctly.
+- On September 20, 2026, final enterprise polish was applied without functionality changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed the center workspace, matching-question selection state, side rails, and supervisor panels still render correctly.
+- On September 20, 2026, final composer polish was applied without workflow changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed the composer normal/focus/ready states, Ask button accessibility text, and a submitted ESP password query still work correctly.
+- On September 20, 2026, the composer brightness follow-up was applied without functionality changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation confirmed default and typed composer states render with stronger contrast.
+- On September 20, 2026, the final product design pass was applied without backend or workflow changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed the simplified supervisor panel and matching-question flow still render correctly.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -308,6 +316,28 @@ Files changed in enterprise design-system refinement:
 
 - `apps/web/src/app/features/agent/agent-workspace.component.scss` - further separates page/workspace/rail/card surfaces, reduces reliance on colored borders, maps Hybrid/Embedding/Indexed badges to semantic chip colors, and makes staged document-management actions read as enterprise cards.
 - `docs/CODEX_HANDOFF.md` - recorded the refinement and validation notes.
+
+Files changed in final enterprise polish:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthens center workspace elevation/brightness, softens side rails, increases section rhythm, and styles matching script questions as selectable search results.
+- `docs/CODEX_HANDOFF.md` - recorded the final enterprise polish and validation notes.
+
+Files changed in final composer polish:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - updates the composer placeholder and adds presentational Ask button label/icon elements.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - strengthens composer elevation, surface, border, focus glow, Ask button gradient, hover/pressed states, and loading-state styling.
+- `docs/CODEX_HANDOFF.md` - recorded the final composer polish and validation notes.
+
+Files changed in composer brightness follow-up:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - increases composer shell saturation, input border contrast, default Ask button visibility, and placeholder contrast.
+- `docs/CODEX_HANDOFF.md` - recorded the brightness follow-up and validation notes.
+
+Files changed in final product design pass:
+
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - removes technical supervisor status fields, simplifies active document metadata, and adds restrained visual icons to document/admin controls.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - shifts to a warmer neutral surface hierarchy, reduces non-semantic section color, calms navigation surfaces, keeps approved-answer/reference/primary-action color semantics, and improves button/icon proportions.
+- `docs/CODEX_HANDOFF.md` - recorded the final product design pass and validation notes.
 
 ## Important Existing Behavior - Preserve
 
