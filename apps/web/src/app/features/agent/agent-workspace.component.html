@@ -21,7 +21,7 @@
     <h3>Recent questions</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of recent()">
-        <button mat-button type="button" [disabled]="isThinking()" (click)="ask(item.question)">{{ item.question }}</button>
+        <button class="rail-question-button" type="button" [disabled]="isThinking()" (click)="ask(item.question)">{{ item.question }}</button>
       </mat-list-item>
     </mat-list>
   </aside>
@@ -36,8 +36,14 @@
 
     <section class="chat-thread">
       <div class="empty-thread" *ngIf="messages().length === 0">
-        <h3>Ask the next caller question here</h3>
-        <p>Short topics like <strong>sick leave</strong> will surface matching script questions. Full questions try to return the exact caller wording.</p>
+        <h3>Welcome to SD Agent IQ</h3>
+        <p>Try asking:</p>
+        <ul class="empty-suggestions">
+          <li>I forgot my ESP password</li>
+          <li>Direct Deposit</li>
+          <li>Paid Sick Leave</li>
+          <li>Where do I send my timesheet?</li>
+        </ul>
       </div>
 
       <article
@@ -65,8 +71,8 @@
 
         <div class="message-bubble assistant-bubble" *ngIf="message.role === 'assistant' && message.response as result">
           <section class="answer-section answer-section--choices" *ngIf="result.scenarioMatches.length > 0">
-            <h3>Matching script questions</h3>
-            <p class="section-copy">Choose the closest script question to load the exact caller wording.</p>
+            <h3>We found multiple matching procedures</h3>
+            <p class="section-copy">Select the procedure that best matches the caller's question.</p>
             <div class="scenario-chip-list">
               <button class="scenario-chip" type="button" [disabled]="isThinking()" *ngFor="let match of result.scenarioMatches" (click)="chooseScenario(match)">
                 {{ match.scenarioText }}
@@ -76,7 +82,14 @@
 
           <section class="answer-section answer-section--primary" *ngIf="result.scenarioMatches.length === 0">
             <h3>Say this to caller</h3>
-            <div class="answer-copy">{{ result.sayThisToCaller }}</div>
+            <div class="answer-blocks">
+              <ng-container *ngFor="let block of result.presentationBlocks">
+                <p class="answer-copy" *ngIf="block.type === 'paragraph'">{{ block.text }}</p>
+                <address class="answer-address" *ngIf="block.type === 'address'">
+                  <span *ngFor="let line of block.lines">{{ line }}</span>
+                </address>
+              </ng-container>
+            </div>
           </section>
 
           <section class="answer-section answer-section--supporting answer-section--notes" *ngIf="result.scenarioMatches.length === 0 && result.notes.length > 0">
@@ -179,7 +192,6 @@
             [disabled]="!canSubmit()"
           >
             <span class="composer-submit-label">{{ isThinking() ? "Searching" : "Ask" }}</span>
-            <span class="composer-submit-icon" aria-hidden="true"></span>
           </button>
         </div>
       </div>
@@ -190,13 +202,13 @@
     <h3>Usually asked</h3>
     <mat-list>
       <mat-list-item *ngFor="let item of common()">
-        <button mat-button type="button" [disabled]="isThinking()" (click)="ask(item)">{{ item }}</button>
+        <button class="rail-question-button" type="button" [disabled]="isThinking()" (click)="ask(item)">{{ item }}</button>
       </mat-list-item>
     </mat-list>
 
     <ng-container *ngIf="isSupervisorWorkspace()">
       <section class="admin-panel">
-        <h3>Current Active Documents</h3>
+        <h3>Current Active Knowledge</h3>
 
         <article class="document-card">
           <div>
@@ -204,12 +216,16 @@
           </div>
           <dl class="document-meta">
             <div>
-              <dt>Current Version</dt>
-              <dd>{{ activeDocument("scripts")?.fileName ?? "No active Scripts document" }}</dd>
+              <dt>Document</dt>
+              <dd>{{ activeKnowledgeName("scripts") }}</dd>
+            </div>
+            <div>
+              <dt>Version</dt>
+              <dd>{{ activeKnowledgeVersion("scripts") }}</dd>
             </div>
             <div>
               <dt>Indexed Date</dt>
-              <dd>{{ formatDate(activeDocument("scripts")?.indexedAt) }}</dd>
+              <dd>{{ formatDate(activeKnowledgeIndexedDate("scripts")) }}</dd>
             </div>
             <div>
               <dt>Status</dt>
@@ -224,12 +240,16 @@
           </div>
           <dl class="document-meta">
             <div>
-              <dt>Current Version</dt>
-              <dd>{{ activeDocument("pm")?.fileName ?? "No active PM document" }}</dd>
+              <dt>Document</dt>
+              <dd>{{ activeKnowledgeName("pm") }}</dd>
+            </div>
+            <div>
+              <dt>Version</dt>
+              <dd>{{ activeKnowledgeVersion("pm") }}</dd>
             </div>
             <div>
               <dt>Indexed Date</dt>
-              <dd>{{ formatDate(activeDocument("pm")?.indexedAt) }}</dd>
+              <dd>{{ formatDate(activeKnowledgeIndexedDate("pm")) }}</dd>
             </div>
             <div>
               <dt>Status</dt>
@@ -240,22 +260,46 @@
       </section>
 
       <section class="admin-panel">
-        <h3>Document Management</h3>
-        <div class="admin-actions">
-          <button class="admin-action admin-action--secondary" type="button" disabled>
-            <strong><span aria-hidden="true">☁</span> Upload Scripts PDF</strong>
-            <span>Stage an updated caller-script source document.</span>
-          </button>
-          <button class="admin-action admin-action--secondary" type="button" disabled>
-            <strong><span aria-hidden="true">☁</span> Upload PM PDF</strong>
-            <span>Stage an updated Procedures Manual source document.</span>
-          </button>
-          <button class="admin-action admin-action--primary" type="button" disabled>
-            <strong><span aria-hidden="true">↻</span> Reindex Documents</strong>
-            <span>Refresh scripts, references, and retrieval chunks.</span>
+        <h3>Knowledge Center</h3>
+        <div class="knowledge-update-flow">
+          <input #scriptsPdfInput class="file-input" type="file" accept="application/pdf,.pdf" (change)="onKnowledgeFileSelected('scripts', $event)" />
+          <input #pmPdfInput class="file-input" type="file" accept="application/pdf,.pdf" (change)="onKnowledgeFileSelected('pm', $event)" />
+
+          <article class="knowledge-file-card">
+            <div>
+              <strong>Scripts PDF</strong>
+              <span class="selected-file" *ngIf="selectedKnowledgeFile('scripts') as fileName">
+                <span aria-hidden="true">✓</span> {{ fileName }}
+              </span>
+            </div>
+            <button class="choose-file-button" type="button" (click)="scriptsPdfInput.click()">Choose File</button>
+          </article>
+
+          <article class="knowledge-file-card">
+            <div>
+              <strong>Procedures Manual PDF</strong>
+              <span class="selected-file" *ngIf="selectedKnowledgeFile('pm') as fileName">
+                <span aria-hidden="true">✓</span> {{ fileName }}
+              </span>
+            </div>
+            <button class="choose-file-button" type="button" (click)="pmPdfInput.click()">Choose File</button>
+          </article>
+
+          <button class="admin-action admin-action--primary" type="button" *ngIf="hasSelectedKnowledgeFiles()" (click)="updateKnowledge()">
+            <strong>{{ knowledgeUpdateState() === "updating" ? "Updating Knowledge" : "Update Knowledge" }}</strong>
+            <span>The latest approved knowledge will be available to all users.</span>
           </button>
         </div>
-        <p class="admin-hint">Upload and reindex controls are staged for the next implementation slice.</p>
+
+        <div class="knowledge-progress" *ngIf="knowledgeProgressMessage()">
+          <span class="progress-check" aria-hidden="true">{{ knowledgeUpdateState() === "success" ? "✓" : "•" }}</span>
+          <p>{{ knowledgeProgressMessage() }}</p>
+        </div>
+
+        <div class="knowledge-success" *ngIf="knowledgeUpdateState() === 'success'">
+          <strong>✓ Knowledge successfully updated.</strong>
+          <span>The latest Scripts and Procedures Manual are now available to all users.</span>
+        </div>
       </section>
     </ng-container>
   </aside>

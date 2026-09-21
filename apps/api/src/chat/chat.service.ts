@@ -3,6 +3,7 @@ import type { ChatQueryResponse } from "@sd-agent-iq/shared";
 import { env } from "../config/env.js";
 import { findScriptEntryById, searchPmReferences, searchScripts, toCitations, toReferenceLinks, toScenarioMatches, type StoredScriptEntry } from "../vector-db/script-repository.js";
 import { searchHybridPmReferences, searchHybridScriptCandidates } from "../retrieval/hybrid.js";
+import { formatScriptPresentation } from "./presentation-formatter.js";
 
 function normalizeQuestion(value: string) {
   return value
@@ -37,10 +38,12 @@ export async function buildChatResponse(question: string, selectedScenarioId?: s
   const trimmed = question.trim();
 
   if (!trimmed) {
+    const sayThisToCaller = "Please enter a question so the service can search the latest scripts.";
     return {
       question: "",
       selectedScenarioId: selectedScenarioId ?? null,
-      sayThisToCaller: "Please enter a question so the service can search the latest scripts.",
+      sayThisToCaller,
+      presentationBlocks: formatScriptPresentation(sayThisToCaller),
       notes: [],
       steps: [],
       referenceScreenshots: [],
@@ -69,10 +72,12 @@ export async function buildChatResponse(question: string, selectedScenarioId?: s
       : await searchHybridScriptCandidates(trimmed);
 
   if (matches.length === 0) {
+    const sayThisToCaller = "I couldn't confidently find an approved Script.\n\nTry using different wording or selecting one of the matching procedures.";
     return {
       question: trimmed,
       selectedScenarioId: selectedScenarioId ?? null,
-      sayThisToCaller: "I don't have enough context for this in the current documents.",
+      sayThisToCaller,
+      presentationBlocks: formatScriptPresentation(sayThisToCaller),
       notes: [],
       steps: [],
       referenceScreenshots: [],
@@ -100,13 +105,15 @@ export async function buildChatResponse(question: string, selectedScenarioId?: s
     : useKeywordRetrieval
       ? await searchPmReferences(trimmed, `${topMatch.sectionTitle}\n${topMatch.scenarioText}\n${topMatch.scriptText}`)
       : await searchHybridPmReferences(trimmed, `${topMatch.sectionTitle}\n${topMatch.scenarioText}\n${topMatch.scriptText}`);
+  const sayThisToCaller = shouldPromptForChoice
+    ? "I found a few matching script questions. Choose the closest one to see the exact caller wording."
+    : topMatch.scriptText;
 
   return {
     question: trimmed,
     selectedScenarioId: selectedScenarioId ?? null,
-    sayThisToCaller: shouldPromptForChoice
-      ? "I found a few matching script questions. Choose the closest one to see the exact caller wording."
-      : topMatch.scriptText,
+    sayThisToCaller,
+    presentationBlocks: formatScriptPresentation(sayThisToCaller),
     notes: shouldPromptForChoice ? [] : splitNotes(topMatch.notesText),
     steps: shouldPromptForChoice ? [] : extractSteps(topMatch.scriptText),
     referenceScreenshots: shouldPromptForChoice ? [] : toReferenceLinks(pmReferences),

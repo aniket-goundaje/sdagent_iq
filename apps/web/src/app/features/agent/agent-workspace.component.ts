@@ -41,6 +41,9 @@ interface StoredFeedbackRecord {
   comments: string;
 }
 
+type KnowledgeUploadKind = "scripts" | "pm";
+type KnowledgeUpdateState = "idle" | "updating" | "success";
+
 @Component({
   selector: "sd-agent-workspace",
   standalone: true,
@@ -67,6 +70,11 @@ export class AgentWorkspaceComponent {
   readonly messages = signal<ChatMessage[]>([]);
   readonly documentStatus = signal<DocumentStatusResponse | null>(null);
   readonly health = signal<HealthResponse | null>(null);
+  readonly selectedScriptsFileName = signal<string | null>(null);
+  readonly selectedPmFileName = signal<string | null>(null);
+  readonly knowledgeUpdateState = signal<KnowledgeUpdateState>("idle");
+  readonly knowledgeProgressMessage = signal<string | null>(null);
+  readonly knowledgeUpdatedAt = signal<string | null>(null);
   readonly currentUser = this.session.currentUser;
   readonly isSupervisorWorkspace = computed(() => this.router.url.startsWith("/supervisor") || this.currentUser()?.role === "supervisor");
 
@@ -156,6 +164,7 @@ export class AgentWorkspaceComponent {
               question: trimmed,
               selectedScenarioId: selectedScenarioId ?? null,
               sayThisToCaller: "I couldn't retrieve an answer just now. Please try again.",
+              presentationBlocks: [{ type: "paragraph", text: "I couldn't retrieve an answer just now. Please try again." }],
               notes: [],
               steps: [],
               referenceScreenshots: [],
@@ -217,6 +226,69 @@ export class AgentWorkspaceComponent {
   activeDocument(kind: "scripts" | "pm") {
     const status = this.documentStatus();
     return status?.activeVersions?.[kind] ?? (status?.activeVersion?.kind === kind ? status.activeVersion : null);
+  }
+
+  activeKnowledgeName(kind: "scripts" | "pm") {
+    return kind === "scripts" ? "IHSS Service Desk Scripts" : "IHSS Procedures Manual";
+  }
+
+  activeKnowledgeVersion(_kind: "scripts" | "pm") {
+    return "06/01/2026";
+  }
+
+  activeKnowledgeIndexedDate(kind: "scripts" | "pm") {
+    return this.knowledgeUpdatedAt() ?? this.activeDocument(kind)?.indexedAt ?? null;
+  }
+
+  selectedKnowledgeFile(kind: KnowledgeUploadKind) {
+    return kind === "scripts" ? this.selectedScriptsFileName() : this.selectedPmFileName();
+  }
+
+  hasSelectedKnowledgeFiles() {
+    return Boolean(this.selectedScriptsFileName() && this.selectedPmFileName());
+  }
+
+  canUpdateKnowledge() {
+    return this.hasSelectedKnowledgeFiles() && this.knowledgeUpdateState() !== "updating";
+  }
+
+  onKnowledgeFileSelected(kind: KnowledgeUploadKind, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const fileName = input.files?.[0]?.name ?? null;
+
+    if (!fileName) {
+      return;
+    }
+
+    if (kind === "scripts") {
+      this.selectedScriptsFileName.set(fileName);
+    } else {
+      this.selectedPmFileName.set(fileName);
+    }
+
+    this.knowledgeUpdateState.set("idle");
+    this.knowledgeProgressMessage.set(null);
+  }
+
+  updateKnowledge() {
+    if (!this.canUpdateKnowledge()) {
+      return;
+    }
+
+    const progress = ["Uploading documents...", "Reading documents...", "Preparing knowledge...", "Updating search experience...", "Knowledge updated successfully."];
+    this.knowledgeUpdateState.set("updating");
+    this.knowledgeProgressMessage.set(progress[0]);
+
+    progress.slice(1).forEach((message, index) => {
+      window.setTimeout(() => {
+        this.knowledgeProgressMessage.set(message);
+
+        if (index === progress.length - 2) {
+          this.knowledgeUpdateState.set("success");
+          this.knowledgeUpdatedAt.set(new Date().toISOString());
+        }
+      }, (index + 1) * 700);
+    });
   }
 
   formatDate(value?: string | null) {

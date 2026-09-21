@@ -28,6 +28,7 @@ export interface ChatQueryResponse {
   question: string;
   selectedScenarioId: string | null;
   sayThisToCaller: string;
+  presentationBlocks: ScriptPresentationBlock[];
   notes: string[];
   steps: string[];
   referenceScreenshots: ReferenceScreenshot[];
@@ -35,6 +36,16 @@ export interface ChatQueryResponse {
   cacheHit: boolean;
   scenarioMatches: ParsedScriptScenarioMatch[];
 }
+
+export type ScriptPresentationBlock =
+  | {
+      type: "paragraph";
+      text: string;
+    }
+  | {
+      type: "address";
+      lines: string[];
+    };
 
 export interface RecentQuestion {
   id: string;

@@ -48,6 +48,10 @@ Current project status as of August 29, 2026:
 - The final composer polish makes the chat composer the strongest interaction point with a richer command-center surface, stronger focus glow, natural-language example placeholder, and a higher-contrast purple-to-magenta Ask action with hover, pressed, and loading states.
 - The composer brightness follow-up increases the default composer contrast so the input shell and disabled Ask action remain visually discoverable before the agent starts typing.
 - The final product design pass reduces decorative color, shifts the app to a warmer neutral surface system, keeps semantic color for approved answers/references/primary actions, and simplifies the supervisor sidebar into business-facing document status.
+- A reusable chat presentation formatting layer now adds `presentationBlocks` to chat responses. The first slice detects mailing-address blocks from `scriptText` and lets Angular render them as readable address cards while preserving the original `sayThisToCaller` string and retrieval behavior.
+- The final demo-readiness pass tightens the business-facing experience without changing retrieval: the empty state now gives executive-friendly starter prompts, matching-question copy explains the selection task, supervisor admin language is framed as Knowledge Management, upload/reindex controls behave as a complete UI workflow, the no-match copy is clearer, and composer/Ask spacing was adjusted to prevent icon/text overlap.
+- The supervisor Knowledge Upload workflow now opens native PDF pickers, shows selected filenames with `Ready to Index` status, switches the primary action between `Reindex Knowledge` and `Index Knowledge`, and presents active knowledge with business-friendly document names, version, indexed date, and indexed status without exposing internal IDs.
+- The supervisor Knowledge Center workflow was refined to remove `Reindex` and implementation-oriented language from the business UI. Supervisors now choose Scripts and Procedures Manual PDFs, then use one `Update Knowledge` action with business-friendly progress messages and a success confirmation.
 
 ## Current RAG Pipeline
 
@@ -203,6 +207,10 @@ Validation actually performed in this session:
 - On September 20, 2026, final composer polish was applied without workflow changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed the composer normal/focus/ready states, Ask button accessibility text, and a submitted ESP password query still work correctly.
 - On September 20, 2026, the composer brightness follow-up was applied without functionality changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation confirmed default and typed composer states render with stronger contrast.
 - On September 20, 2026, the final product design pass was applied without backend or workflow changes. `npm run typecheck` passed, the Angular dev server rebuilt successfully, and browser validation on `/supervisor` confirmed the simplified supervisor panel and matching-question flow still render correctly.
+- On September 20, 2026, the presentation formatting layer was added for address blocks without changing retrieval. `npm run typecheck` and `npm run build:api` passed, the API was restarted, and local validation confirmed `Where do I send my timesheet?` returns four `address` presentation blocks while the UI renders those addresses as separate readable cards.
+- On September 20, 2026, the final demo-readiness polish was applied without changing retrieval, hybrid retrieval, embeddings, or workflows. `npm run typecheck` and `npm run build:api` passed, a read-only browser/API validation confirmed the Angular app is responding on `http://127.0.0.1:4301/`, and screenshots were captured for the empty state, matching-procedure state, and structured answer state.
+- On September 20, 2026, the Supervisor Knowledge Upload workflow was completed at the UI layer without backend, retrieval, or API contract changes. `npm run typecheck` passed after adding native PDF inputs, selected-file display, `Ready to Index` status, business-friendly active document labels, and an active `Index/Reindex Knowledge` action. A browser render check confirmed the upload controls render without `Coming Soon`; automated file selection was blocked by the browser-control environment. `npm run build:web` was attempted twice but the Angular/esbuild service exited with code 134 before producing a normal application diagnostic.
+- On September 20, 2026, the Supervisor Knowledge Center final product pass removed `Reindex`, `Ready to Index`, `Coming Soon`, and technical implementation language from the supervisor UI. `npm run typecheck` passed, source scan confirmed the removed labels are not present in the supervisor component, and browser validation captured the business-facing Knowledge Center render. Automated native file selection remained blocked by the browser-control environment.
 - On August 29, 2026, live read-only comparison probes showed:
   - `What is paid sick leave?` still returns the exact caller script and citations.
   - `provider forgot portal password` now resolves through the hybrid path to the password-reset script instead of returning no match.
@@ -338,6 +346,16 @@ Files changed in final product design pass:
 - `apps/web/src/app/features/agent/agent-workspace.component.html` - removes technical supervisor status fields, simplifies active document metadata, and adds restrained visual icons to document/admin controls.
 - `apps/web/src/app/features/agent/agent-workspace.component.scss` - shifts to a warmer neutral surface hierarchy, reduces non-semantic section color, calms navigation surfaces, keeps approved-answer/reference/primary-action color semantics, and improves button/icon proportions.
 - `docs/CODEX_HANDOFF.md` - recorded the final product design pass and validation notes.
+
+Files changed in presentation formatting layer:
+
+- `packages/shared/src/chat/chat.types.ts` - adds reusable `ScriptPresentationBlock` and `presentationBlocks` to `ChatQueryResponse`.
+- `apps/api/src/chat/presentation-formatter.ts` - adds the first presentation formatter slice with conservative mailing-address detection.
+- `apps/api/src/chat/chat.service.ts` - includes formatted presentation blocks in all chat responses while preserving `sayThisToCaller`.
+- `apps/web/src/app/features/agent/agent-workspace.component.html` - renders presentation blocks returned by the API.
+- `apps/web/src/app/features/agent/agent-workspace.component.scss` - styles address blocks inside `Say this to caller`.
+- `apps/web/src/app/features/agent/agent-workspace.component.ts` - includes presentation blocks in the local error fallback response.
+- `docs/CODEX_HANDOFF.md` - recorded the presentation formatting layer and validation notes.
 
 ## Important Existing Behavior - Preserve
 
