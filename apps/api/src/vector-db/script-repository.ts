@@ -31,6 +31,14 @@ function formatVector(embedding: number[]) {
   return `[${embedding.join(",")}]`;
 }
 
+function normalizeSearchText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeSearchTextLower(value: string) {
+  return normalizeSearchText(value).toLowerCase();
+}
+
 function mapStoredScriptEntry(row: Record<string, string | number>): StoredScriptEntry {
   return {
     id: String(row.id),
@@ -119,7 +127,7 @@ export async function replaceScriptEntries(documentVersionId: string, entries: P
           entry.scenarioText,
           entry.scriptText,
           entry.notesText,
-          searchText
+          normalizeSearchText(searchText)
         ]
       );
     }
@@ -172,7 +180,7 @@ export async function replacePmReferences(documentVersionId: string, references:
           reference.page,
           reference.text,
           reference.imageCount,
-          searchText
+          normalizeSearchText(searchText)
         ]
       );
     }
@@ -316,7 +324,7 @@ export async function findScriptEntryById(id: string) {
 
 export async function searchScripts(question: string, limit = 5) {
   await ensureSchema();
-  const lowered = question.trim().toLowerCase();
+  const lowered = normalizeSearchTextLower(question);
   const tokens = Array.from(
     new Set(
       lowered
@@ -352,14 +360,14 @@ export async function searchScripts(question: string, limit = 5) {
       )
       LIMIT 150
     `,
-    [question, tokens.map((token) => `%${token}%`)]
+    [normalizeSearchText(question), tokens.map((token) => `%${token}%`)]
   );
 
   const scored = rows
     .map((row) => mapStoredScriptEntry(row as Record<string, string | number>))
     .map((entry) => {
-      const scenario = entry.scenarioText.toLowerCase();
-      const searchArea = `${entry.sectionTitle}\n${entry.scenarioText}\n${entry.scriptText}\n${entry.notesText}`.toLowerCase();
+      const scenario = normalizeSearchTextLower(entry.scenarioText);
+      const searchArea = normalizeSearchTextLower(`${entry.sectionTitle}\n${entry.scenarioText}\n${entry.scriptText}\n${entry.notesText}`);
       const exactScenario = scenario === lowered;
       const phraseInScenario = scenario.includes(lowered);
       const phraseInSearch = searchArea.includes(lowered);
@@ -415,7 +423,7 @@ function mapStoredPmReference(row: Record<string, string | number>) {
 
 export async function searchPmReferences(question: string, contextText: string, limit = 3) {
   await ensureSchema();
-  const combined = `${question}\n${contextText}`.trim().toLowerCase();
+  const combined = normalizeSearchTextLower(`${question}\n${contextText}`);
   const tokens = Array.from(
     new Set(
       combined
@@ -455,13 +463,13 @@ export async function searchPmReferences(question: string, contextText: string, 
   return rows
     .map((row) => mapStoredPmReference(row as Record<string, string | number>))
     .map((reference) => {
-      const haystack = `${reference.sectionCode}\n${reference.sectionTitle}\n${reference.textExcerpt}`.toLowerCase();
+      const haystack = normalizeSearchTextLower(`${reference.sectionCode}\n${reference.sectionTitle}\n${reference.textExcerpt}`);
       const tokenHits = tokens.filter((token) => haystack.includes(token)).length;
       let score = tokenHits * 5;
       if (reference.imageCount > 0) {
         score += 8;
       }
-      if (reference.sectionTitle.toLowerCase().includes(question.toLowerCase())) {
+      if (normalizeSearchTextLower(reference.sectionTitle).includes(normalizeSearchTextLower(question))) {
         score += 12;
       }
 

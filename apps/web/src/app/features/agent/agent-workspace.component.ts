@@ -203,6 +203,56 @@ export class AgentWorkspaceComponent {
     return "Finding the best matching caller script...";
   }
 
+  matchingProceduresTitle() {
+    return "We found several closely matching procedures.";
+  }
+
+  matchingProceduresInstruction() {
+    return "These are the best matches for your question.";
+  }
+
+  isBroadProcedureSearch(matches: ParsedScriptScenarioMatch[]) {
+    return matches.length > 10;
+  }
+
+  bestScenarioMatches(matches: ParsedScriptScenarioMatch[]) {
+    return matches.slice(0, 5);
+  }
+
+  procedureSearchSuggestions(question: string, matches: ParsedScriptScenarioMatch[]) {
+    const suggestions: string[] = [];
+    const seen = new Set<string>();
+    const queryWords = this.searchSuggestionWords(question);
+
+    for (const match of matches.slice(0, 18)) {
+      const suggestion = this.suggestProcedureSearch(match.scenarioText, queryWords);
+
+      if (!suggestion) {
+        continue;
+      }
+
+      const key = suggestion.toLowerCase();
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      suggestions.push(suggestion);
+
+      if (suggestions.length >= 5) {
+        break;
+      }
+    }
+
+    return suggestions;
+  }
+
+  useSuggestedSearch(suggestion: string) {
+    this.question.set(suggestion);
+    this.ask(suggestion);
+  }
+
   canSubmit() {
     return !this.isThinking() && this.question().trim().length > 0;
   }
@@ -374,6 +424,71 @@ export class AgentWorkspaceComponent {
 
       return [{ id: `local-${stamp}`, question, askedAt: new Date(stamp).toISOString() }, ...existing].slice(0, AgentWorkspaceComponent.recentQuestionLimit);
     });
+  }
+
+  private suggestProcedureSearch(title: string, queryWords: string[]) {
+    const words = this.searchSuggestionWords(title);
+
+    if (queryWords.length > 0) {
+      const anchored = this.suggestAnchoredProcedureSearch(words, queryWords);
+
+      if (anchored) {
+        return anchored;
+      }
+
+      return "";
+    }
+
+    const phrase = words.slice(0, 4).join(" ").trim();
+
+    if (phrase.length < 4) {
+      return "";
+    }
+
+    return this.titleCaseSuggestion(phrase);
+  }
+
+  private suggestAnchoredProcedureSearch(words: string[], queryWords: string[]) {
+    for (let index = 0; index <= words.length - queryWords.length; index += 1) {
+      const matchesQuery = queryWords.every((word, offset) => words[index + offset] === word);
+
+      if (!matchesQuery) {
+        continue;
+      }
+
+      const phraseWords = words.slice(index, index + queryWords.length);
+      const next = words[index + queryWords.length];
+      const previous = words[index - 1];
+      const nextSuggestion = next ? [...phraseWords, next] : phraseWords;
+      const previousSuggestion = previous ? [previous, ...phraseWords] : phraseWords;
+      const preferred = next && !this.isLowValueSuggestionWord(next) ? nextSuggestion : previous && !this.isLowValueSuggestionWord(previous) ? previousSuggestion : [];
+      const phrase = preferred.join(" ").trim();
+
+      return phrase.length >= 4 ? this.titleCaseSuggestion(phrase) : "";
+    }
+
+    return "";
+  }
+
+  private searchSuggestionWords(value: string) {
+    return value
+      .replace(/[“”]/g, "\"")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\b(I|you|my|me|we|am|is|are|was|were|do|does|did|can|will|would|should|what|when|where|why|how|if|the|a|an|to|for|of|on|in|with|using|use|and|or|by|be|been|have|has|would|like|subject|ihss|wpcs|recipient|provider)\b/gi, " ")
+      .replace(/[^a-z0-9/ -]+/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase()
+      .split(" ")
+      .filter((word) => word.length > 2 || /^[a-z]{2,}$/i.test(word));
+  }
+
+  private isLowValueSuggestionWord(word: string) {
+    return ["new", "paid", "received", "request", "types", "available", "information"].includes(word);
+  }
+
+  private titleCaseSuggestion(value: string) {
+    return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   private createEmptyFeedback(): FeedbackState {

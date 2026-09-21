@@ -29,14 +29,14 @@
   <main class="chat-panel">
     <header class="chat-header">
       <div>
-        <h2>SD Agent IQ</h2>
-        <p>Grounded caller scripts, notes, steps, and reference links in a single chat flow.</p>
+        <h2>Ask a service desk question</h2>
+        <p>Find approved caller guidance, notes, steps, and reference links in one workspace.</p>
       </div>
     </header>
 
     <section class="chat-thread">
       <div class="empty-thread" *ngIf="messages().length === 0">
-        <h3>Welcome to SD Agent IQ</h3>
+        <h3>Start with the caller's question</h3>
         <p>Try asking:</p>
         <ul class="empty-suggestions">
           <li>I forgot my ESP password</li>
@@ -71,12 +71,29 @@
 
         <div class="message-bubble assistant-bubble" *ngIf="message.role === 'assistant' && message.response as result">
           <section class="answer-section answer-section--choices" *ngIf="result.scenarioMatches.length > 0">
-            <h3>We found multiple matching procedures</h3>
-            <p class="section-copy">Select the procedure that best matches the caller's question.</p>
-            <div class="scenario-chip-list">
-              <button class="scenario-chip" type="button" [disabled]="isThinking()" *ngFor="let match of result.scenarioMatches" (click)="chooseScenario(match)">
-                {{ match.scenarioText }}
-              </button>
+            <h3>{{ matchingProceduresTitle() }}</h3>
+            <p class="section-copy">{{ matchingProceduresInstruction() }}</p>
+
+            <div class="broad-search-guidance" *ngIf="isBroadProcedureSearch(result.scenarioMatches)">
+              <p>
+                Not seeing the procedure you're looking for? These are the closest matching procedures based on your question.
+                For more specific results, add another keyword or describe the caller's issue in more detail.
+              </p>
+              <div class="suggestion-group" *ngIf="procedureSearchSuggestions(message.question, result.scenarioMatches) as suggestions">
+                <span>Suggested searches:</span>
+                <button class="suggestion-chip" type="button" *ngFor="let suggestion of suggestions" (click)="useSuggestedSearch(suggestion)" [disabled]="isThinking()">
+                  {{ suggestion }}
+                </button>
+              </div>
+            </div>
+
+            <div class="procedure-result-group">
+              <h4>Best Matches</h4>
+              <div class="scenario-chip-list">
+                <button class="scenario-chip" type="button" [disabled]="isThinking()" *ngFor="let match of bestScenarioMatches(result.scenarioMatches)" (click)="chooseScenario(match)">
+                  {{ match.scenarioText }}
+                </button>
+              </div>
             </div>
           </section>
 

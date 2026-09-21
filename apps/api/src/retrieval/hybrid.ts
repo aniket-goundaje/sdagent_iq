@@ -27,6 +27,7 @@ const PHRASE_SCENARIO_BOOST = 10;
 const PHRASE_SEARCH_BOOST = 5;
 const MIN_SCRIPT_SCORE = 30;
 const MIN_PM_SCORE = 18;
+const DEFAULT_SCRIPT_MATCH_LIMIT = 150;
 
 function normalizeQuestion(value: string) {
   return value
@@ -124,8 +125,7 @@ function mergeScriptCandidates(
       };
     })
     .filter((candidate) => candidate.score >= MIN_SCRIPT_SCORE)
-    .sort((left, right) => right.score - left.score || left.pageStart - right.pageStart)
-    .slice(0, 5);
+    .sort((left, right) => right.score - left.score || left.pageStart - right.pageStart);
 }
 
 function mergePmCandidates(
@@ -200,7 +200,7 @@ function mergePmCandidates(
     .slice(0, 3);
 }
 
-export async function searchHybridScriptCandidates(question: string, limit = 5): Promise<HybridScriptCandidate[]> {
+export async function searchHybridScriptCandidates(question: string, limit = DEFAULT_SCRIPT_MATCH_LIMIT): Promise<HybridScriptCandidate[]> {
   const [keywordScripts, semanticScripts] = await Promise.all([
     searchScripts(question, Math.max(limit, 8)),
     searchSemanticScriptCandidates(question, Math.max(limit, 8))
