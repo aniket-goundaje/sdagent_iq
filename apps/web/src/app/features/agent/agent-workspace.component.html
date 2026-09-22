@@ -102,6 +102,22 @@
             <div class="answer-blocks">
               <ng-container *ngFor="let block of result.presentationBlocks">
                 <p class="answer-copy" *ngIf="block.type === 'paragraph'">{{ block.text }}</p>
+                <div class="answer-list-block" *ngIf="block.type === 'list'">
+                  <p class="answer-list-intro" *ngIf="block.intro">{{ block.intro }}</p>
+                  <ul class="answer-list" *ngIf="block.style === 'bullet'">
+                    <li *ngFor="let item of block.items">{{ item }}</li>
+                  </ul>
+                  <ol class="answer-list answer-list--numbered" *ngIf="block.style === 'number'">
+                    <li *ngFor="let item of block.items">{{ item }}</li>
+                  </ol>
+                </div>
+                <section class="answer-section-group" *ngIf="block.type === 'sectionGroup'">
+                  <h4>{{ block.heading }}</h4>
+                  <p class="answer-copy" *ngIf="block.text">{{ block.text }}</p>
+                  <ul class="answer-list" *ngIf="block.items.length > 0">
+                    <li *ngFor="let item of block.items">{{ item }}</li>
+                  </ul>
+                </section>
                 <address class="answer-address" *ngIf="block.type === 'address'">
                   <span *ngFor="let line of block.lines">{{ line }}</span>
                 </address>

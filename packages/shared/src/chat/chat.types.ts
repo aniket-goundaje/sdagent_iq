@@ -43,6 +43,18 @@ export type ScriptPresentationBlock =
       text: string;
     }
   | {
+      type: "list";
+      intro?: string;
+      style: "bullet" | "number";
+      items: string[];
+    }
+  | {
+      type: "sectionGroup";
+      heading: string;
+      text?: string;
+      items: string[];
+    }
+  | {
       type: "address";
       lines: string[];
     };

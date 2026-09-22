@@ -976,6 +976,62 @@ mat-list {
   overflow-wrap: break-word;
 }
 
+.answer-list-block {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.answer-list-intro {
+  margin: 0;
+  color: rgba(21, 34, 56, 0.88);
+  font-size: 1.06rem;
+  line-height: 1.65;
+}
+
+.answer-list {
+  display: grid;
+  gap: 0.42rem;
+  margin: 0;
+  padding-left: 1.32rem;
+  color: rgba(21, 34, 56, 0.86);
+  font-size: 1.03rem;
+  line-height: 1.58;
+}
+
+.answer-list li {
+  padding-left: 0.12rem;
+  overflow-wrap: break-word;
+}
+
+.answer-list li::marker {
+  color: rgba(17, 128, 109, 0.78);
+  font-weight: 800;
+}
+
+.answer-list--numbered {
+  padding-left: 1.52rem;
+}
+
+.answer-section-group {
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.82rem 0.92rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 8px 18px rgba(17, 128, 109, 0.06),
+    inset 0 0 0 1px rgba(17, 128, 109, 0.1);
+}
+
+.answer-section-group h4 {
+  margin: 0;
+  color: rgba(12, 92, 75, 0.96);
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .answer-address {
   display: grid;
   gap: 0.18rem;
